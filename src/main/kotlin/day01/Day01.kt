@@ -1,7 +1,6 @@
 package day01
 
 import common.Input
-import common.Test
 import common.day
 
 // answer #1: 55834
@@ -25,10 +24,6 @@ fun main() {
             run test 2 expect 281
         }
     }
-}
-sealed interface Testing {
-    data class F(val string: String) : Testing
-    data object Teft : Testing
 }
 
 fun solve1(input: Input) = input.lines.sumOf { line ->
