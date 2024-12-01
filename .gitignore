@@ -1,0 +1,16 @@
+*.iml
+lib/
+build/
+*.ipr
+*.iws
+out/
+.idea_modules/
+.gradle
+/local.properties
+.DS_Store
+workspace.xml
+tasks.xml
+z3/com.microsoft.z3.jar
+z3/libz3.dylib
+z3/libz3java.dylib
+.kotlin/
