@@ -4,8 +4,8 @@ import common.Input
 import common.day
 import kotlin.math.abs
 
-// answer #1: 285
-// answer #2: not 307, not 259
+// answer #1: 213
+// answer #2: 285
 
 fun main() {
     day(n = 2) {
