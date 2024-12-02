@@ -10,7 +10,7 @@ import kotlin.math.abs
 fun main() {
     day(n = 2) {
         part1 { input ->
-            parseReports(input).count { report -> report.checkLevels() }
+            parseReports(input).count { report -> report.areLevelsSafe() }
         }
         verify {
             expect result 213
@@ -19,7 +19,7 @@ fun main() {
 
         part2 { input ->
             parseReports(input)
-                .count { report -> report.checkLevels() || report.tryBruteForce() }
+                .count { report -> report.areLevelsSafe() || report.runBruteForceCheck() }
         }
         verify {
             expect result 285
@@ -31,7 +31,7 @@ fun main() {
 private fun parseReports(input: Input) = input.lines
     .map { line -> line.split(" ").map(String::toInt) }
 
-private fun List<Int>.checkLevels(): Boolean =
+private fun List<Int>.areLevelsSafe(): Boolean =
     checkIncreasingLevels() || checkDecreasingLevels()
 
 private fun List<Int>.checkIncreasingLevels() =
@@ -43,9 +43,9 @@ private fun List<Int>.checkDecreasingLevels() =
 private fun checkInterval(a: Int, b: Int) =
     abs(a - b) in (1..3)
 
-private fun List<Int>.tryBruteForce() =
+private fun List<Int>.runBruteForceCheck() =
     indices.any { index ->
         toMutableList()
             .apply { removeAt(index) }
-            .checkLevels()
+            .areLevelsSafe()
     }
