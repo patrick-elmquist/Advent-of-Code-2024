@@ -32,10 +32,16 @@ private fun parseReports(input: Input) = input.lines
     .map { line -> line.split(" ").map(String::toInt) }
 
 private fun List<Int>.checkLevels(): Boolean =
-    checkLevels { a, b -> a < b } || checkLevels { a, b -> a > b }
+    checkIncreasingLevels() || checkDecreasingLevels()
 
-private fun List<Int>.checkLevels(condition: (a: Int, b: Int) -> Boolean) =
-    zipWithNext().all { (a, b) -> condition(a, b) && abs(a - b) in (1..3) }
+private fun List<Int>.checkIncreasingLevels() =
+    zipWithNext().all { (a, b) -> a < b && checkInterval(a, b) }
+
+private fun List<Int>.checkDecreasingLevels() =
+    zipWithNext().all { (a, b) -> a > b && checkInterval(a, b) }
+
+private fun checkInterval(a: Int, b: Int) =
+    abs(a - b) in (1..3)
 
 private fun List<Int>.tryBruteForce() =
     indices.any { index ->
@@ -43,4 +49,3 @@ private fun List<Int>.tryBruteForce() =
             .apply { removeAt(index) }
             .checkLevels()
     }
-
