@@ -4,7 +4,7 @@ import common.day
 import common.util.log
 
 // answer #1: 183788984
-// answer #2:
+// answer #2: 62098619
 
 fun main() {
     day(n = 3) {
@@ -50,7 +50,7 @@ fun main() {
             sum
         }
         verify {
-            expect result null
+            expect result 62098619
             run test 2 expect 48
         }
     }
