@@ -36,10 +36,10 @@ fun main() {
     }
 }
 
-val horizontalPoints = sequenceOf(Point.ZERO, Point(1, 0), Point(2, 0), Point(3, 0))
-val verticalPoints = sequenceOf(Point.ZERO, Point(0, 1), Point(0, 2), Point(0, 3))
-val diagonalLeftPoints = sequenceOf(Point.ZERO, Point(-1, 1), Point(-2, 2), Point(-3, 3))
-val diagonalRightPoints = sequenceOf(Point.ZERO, Point(1, 1), Point(2, 2), Point(3, 3))
+private val horizontalPoints = sequenceOf(Point.ZERO, Point(1, 0), Point(2, 0), Point(3, 0))
+private val verticalPoints = sequenceOf(Point.ZERO, Point(0, 1), Point(0, 2), Point(0, 3))
+private val diagonalLeftPoints = sequenceOf(Point.ZERO, Point(-1, 1), Point(-2, 2), Point(-3, 3))
+private val diagonalRightPoints = sequenceOf(Point.ZERO, Point(1, 1), Point(2, 2), Point(3, 3))
 
 private fun Map<Point, Char>.findVertical(point: Point, pattern: String): Boolean =
     check(verticalPoints.map { it + point }, pattern)
