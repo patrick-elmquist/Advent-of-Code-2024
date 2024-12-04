@@ -11,13 +11,14 @@ fun main() {
     day(n = 4) {
         part1 { input ->
             val grid = input.lines.grid
+            val pattern = "XMAS"
             grid.keys.sumOf { point ->
                 listOf(
-                    grid.findVertical(point, "XMAS"),
-                    grid.findHorizontal(point, "XMAS"),
-                    grid.findDiagonalLeft(point, "XMAS"),
-                    grid.findDiagonalRight(point, "XMAS"),
-                ).count { matched -> matched }
+                    verticalPoints,
+                    horizontalPoints,
+                    diagonalLeftPoints,
+                    diagonalRightPoints,
+                ).count { direction -> grid.check(point, direction, pattern) }
             }
         }
         verify {
@@ -27,7 +28,13 @@ fun main() {
 
         part2 { input ->
             val grid = input.lines.grid
-            grid.keys.count { point -> grid.findDiagonalX(point, "MAS") }
+            val pattern = "MAS"
+            grid.keys.count { point ->
+                val topRightPoint = point.copy(x = point.x + 2)
+                val left = grid.check(topRightPoint, diagonalLeftPoints.take(3), pattern)
+                val right = grid.check(point, diagonalRightPoints.take(3), pattern)
+                left && right
+            }
         }
         verify {
             expect result 1990
@@ -36,39 +43,51 @@ fun main() {
     }
 }
 
-private val horizontalPoints = sequenceOf(Point.ZERO, Point(1, 0), Point(2, 0), Point(3, 0))
-private val verticalPoints = sequenceOf(Point.ZERO, Point(0, 1), Point(0, 2), Point(0, 3))
-private val diagonalLeftPoints = sequenceOf(Point.ZERO, Point(-1, 1), Point(-2, 2), Point(-3, 3))
-private val diagonalRightPoints = sequenceOf(Point.ZERO, Point(1, 1), Point(2, 2), Point(3, 3))
+private val horizontalPoints = sequenceOf(
+    Point.ZERO,
+    Point(1, 0),
+    Point(2, 0),
+    Point(3, 0)
+)
 
-private fun Map<Point, Char>.findVertical(point: Point, pattern: String): Boolean =
-    check(verticalPoints.map { it + point }, pattern)
+private val verticalPoints = sequenceOf(
+    Point.ZERO,
+    Point(0, 1),
+    Point(0, 2),
+    Point(0, 3),
+)
 
-private fun Map<Point, Char>.findHorizontal(point: Point, pattern: String): Boolean =
-    check(horizontalPoints.map { it + point }, pattern)
+private val diagonalLeftPoints = sequenceOf(
+    Point.ZERO,
+    Point(-1, 1),
+    Point(-2, 2),
+    Point(-3, 3),
+)
 
-private fun Map<Point, Char>.findDiagonalRight(point: Point, pattern: String): Boolean =
-    check(diagonalRightPoints.map { it + point }, pattern)
+private val diagonalRightPoints = sequenceOf(
+    Point.ZERO,
+    Point(1, 1),
+    Point(2, 2),
+    Point(3, 3),
+)
 
-private fun Map<Point, Char>.findDiagonalLeft(point: Point, pattern: String): Boolean =
-    check(diagonalLeftPoints.map { it + point }, pattern)
-
-private fun Map<Point, Char>.findDiagonalX(point: Point, pattern: String): Boolean {
-    val right = check(diagonalRightPoints.take(3).map { it + point }, pattern)
-    val topRightPoint = point.copy(x = point.x + 2)
-    val left = check(diagonalLeftPoints.take(3).map { it + topRightPoint }, pattern)
-    return right && left
-}
-
-private fun Map<Point, Char>.check(points: Sequence<Point>, pattern: String): Boolean {
+private fun Map<Point, Char>.check(
+    point: Point,
+    directions: Sequence<Point>,
+    pattern: String
+): Boolean {
     val string = buildString {
-        points.forEach { p ->
-            if (p !in this@check) return false
-            append(getValue(p))
-        }
+        directions
+            .map { it + point }
+            .forEach { p ->
+                if (p in this@check) {
+                    append(getValue(p))
+                } else {
+                    return false
+                }
+            }
     }
-    return string.matches(pattern)
+
+    return string.length == pattern.length && string in setOf(pattern, pattern.reversed())
 }
 
-private fun String.matches(pattern: String): Boolean =
-    length == pattern.length && this in setOf(pattern, pattern.reversed())
