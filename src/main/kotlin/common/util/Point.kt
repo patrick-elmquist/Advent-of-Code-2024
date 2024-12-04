@@ -11,7 +11,9 @@ data class Point(val x: Int, val y: Int) {
     operator fun plus(point: Point) = Point(x + point.x, y + point.y)
     operator fun minus(point: Point) = Point(x - point.x, y - point.y)
 
-    companion object
+    companion object {
+        val ZERO = Point(0, 0)
+    }
 }
 
 data class PointL(val x: Long, val y: Long) {

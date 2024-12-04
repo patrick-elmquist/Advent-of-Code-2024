@@ -1,39 +1,24 @@
 package day04
 
 import common.day
-import common.util.log
-import kotlin.math.min
+import common.util.Point
+import common.util.grid
 
 // answer #1: 2654
-// answer #2:
-
-private fun assert(condition: Boolean) {
-    if (!condition) error("")
-}
+// answer #2: 1990
 
 fun main() {
     day(n = 4) {
         part1 { input ->
-            val lines = input.lines
-            val width = lines.first().length
-            val height = lines.size
-
-            var counter = 0
-            for (y in 0..<height) {
-                for (x in 0..<width) {
-                    if (lines.findVertical(x, y)) {
-                        counter++
-                    }
-                    if (lines.findHorizontal(x, y)) {
-                        counter++
-                    }
-                    val findDiagonal = lines.findDiagonal(x, y)
-                    if (findDiagonal > 0) {
-                        counter += findDiagonal
-                    }
-                }
+            val grid = input.lines.grid
+            grid.keys.sumOf { point ->
+                listOf(
+                    grid.findVertical(point, "XMAS"),
+                    grid.findHorizontal(point, "XMAS"),
+                    grid.findDiagonalLeft(point, "XMAS"),
+                    grid.findDiagonalRight(point, "XMAS"),
+                ).count { matched -> matched }
             }
-            counter
         }
         verify {
             expect result 2654
@@ -41,137 +26,49 @@ fun main() {
         }
 
         part2 { input ->
-            val lines = input.lines
-            val width = lines.first().length
-            val height = lines.size
-
-            var counter = 0
-            for (y in 0..<height) {
-                for (x in 0..<width) {
-                    val findDiagonal = lines.findX(x, y)
-                    if (findDiagonal == 2) {
-                        log("found diagonal x:$x y:$y")
-                        counter += 1
-                    }
-                }
-            }
-            counter
+            val grid = input.lines.grid
+            grid.keys.count { point -> grid.findDiagonalX(point, "MAS") }
         }
         verify {
-            expect result null
+            expect result 1990
             run test 1 expect 9
         }
     }
 }
 
-private fun List<String>.findHorizontal(x: Int, y: Int): Boolean {
-    val line = get(y)
-    if (line.length < x + 4) return false
-    val endIndex = x + 4
-    val substring = line.substring(startIndex = x, endIndex = endIndex)
-    return checkString(substring)
+val horizontalPoints = sequenceOf(Point.ZERO, Point(1, 0), Point(2, 0), Point(3, 0))
+val verticalPoints = sequenceOf(Point.ZERO, Point(0, 1), Point(0, 2), Point(0, 3))
+val diagonalLeftPoints = sequenceOf(Point.ZERO, Point(-1, 1), Point(-2, 2), Point(-3, 3))
+val diagonalRightPoints = sequenceOf(Point.ZERO, Point(1, 1), Point(2, 2), Point(3, 3))
+
+private fun Map<Point, Char>.findVertical(point: Point, pattern: String): Boolean =
+    check(verticalPoints.map { it + point }, pattern)
+
+private fun Map<Point, Char>.findHorizontal(point: Point, pattern: String): Boolean =
+    check(horizontalPoints.map { it + point }, pattern)
+
+private fun Map<Point, Char>.findDiagonalRight(point: Point, pattern: String): Boolean =
+    check(diagonalRightPoints.map { it + point }, pattern)
+
+private fun Map<Point, Char>.findDiagonalLeft(point: Point, pattern: String): Boolean =
+    check(diagonalLeftPoints.map { it + point }, pattern)
+
+private fun Map<Point, Char>.findDiagonalX(point: Point, pattern: String): Boolean {
+    val right = check(diagonalRightPoints.take(3).map { it + point }, pattern)
+    val topRightPoint = point.copy(x = point.x + 2)
+    val left = check(diagonalLeftPoints.take(3).map { it + topRightPoint }, pattern)
+    return right && left
 }
 
-private fun List<String>.findVertical(x: Int, y: Int): Boolean {
-    if (lastIndex < y + 3) return false
-    val min = y + 3
+private fun Map<Point, Char>.check(points: Sequence<Point>, pattern: String): Boolean {
     val string = buildString {
-        for (i in y..min) {
-            val line = this@findVertical[i]
-            append(line[x])
+        points.forEach { p ->
+            if (p !in this@check) return false
+            append(getValue(p))
         }
     }
-    return checkString(string)
+    return string.matches(pattern)
 }
 
-private fun List<String>.findDiagonal(x: Int, y: Int): Int {
-    val xRange = first().indices
-    val yRange = indices
-
-    val coords1 = listOf(
-        x to y,
-        x + 1 to y + 1,
-        x + 2 to y + 2,
-        x + 3 to y + 3,
-    )
-
-    var count = 0
-    if (coords1.all { (x, y) -> x in xRange && y in yRange }) {
-        val string = buildString {
-            coords1.forEach { (x, y) ->
-                append(this@findDiagonal.get(y)[x])
-            }
-        }
-        val checked = checkString(string)
-        if (checked) count++
-    }
-
-    val coords2 = listOf(
-        x to y,
-        x - 1 to y + 1,
-        x - 2 to y + 2,
-        x - 3 to y + 3,
-    )
-
-    if (coords2.all { (x, y) -> x in xRange && y in yRange }) {
-        val string = buildString {
-            coords2.forEach { (x, y) ->
-                append(this@findDiagonal.get(y)[x])
-            }
-        }
-        val checked = checkString(string)
-        if (checked) count++
-    }
-
-    return count
-}
-
-private fun checkXString(substring: String): Boolean {
-    return (substring.length == 3 && (substring == "MAS" || substring.reversed() == "MAS"))
-}
-
-private fun List<String>.findX(x: Int, y: Int): Int {
-    val xRange = first().indices
-    val yRange = indices
-
-    val coords1 = listOf(
-        x - 1 to y - 1,
-        x to y,
-        x + 1 to y + 1,
-    )
-
-    var count = 0
-    if (coords1.all { (x, y) -> x in xRange && y in yRange }) {
-        val string = buildString {
-            coords1.forEach { (x, y) ->
-                append(this@findX[y][x])
-            }
-        }
-        string.log()
-        val checked = checkXString(string)
-        if (checked) count++
-    }
-
-    val coords2 = listOf(
-        x + 1 to y - 1,
-        x to y,
-        x - 1 to y + 1,
-    )
-
-    if (coords2.all { (x, y) -> x in xRange && y in yRange }) {
-        val string = buildString {
-            coords2.forEach { (x, y) ->
-                append(this@findX[y][x])
-            }
-        }
-//        string.log()
-        val checked = checkXString(string)
-        if (checked) count++
-    }
-
-    return count
-}
-
-private fun checkString(substring: String): Boolean {
-    return (substring.length == 4 && (substring == "XMAS" || substring.reversed() == "XMAS"))
-}
+private fun String.matches(pattern: String): Boolean =
+    length == pattern.length && this in setOf(pattern, pattern.reversed())
