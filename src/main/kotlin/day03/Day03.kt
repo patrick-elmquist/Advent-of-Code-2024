@@ -31,11 +31,7 @@ fun main() {
                         when (instruction) {
                             "do()" -> enabled = true
                             "don't()" -> enabled = false
-                            else -> {
-                                if (enabled) {
-                                    return@let evaluate(instruction)
-                                }
-                            }
+                            else if (enabled) -> return@let evaluate(instruction)
                         }
                         return@let 0
                     }
