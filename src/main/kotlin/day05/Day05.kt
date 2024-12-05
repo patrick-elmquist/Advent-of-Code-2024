@@ -1,8 +1,9 @@
 package day05
 
+import common.Input
 import common.day
-import common.util.log
 import common.util.sliceByBlank
+import java.util.ArrayDeque
 
 // answer #1: 5208
 // answer #2: 6732
@@ -10,26 +11,10 @@ import common.util.sliceByBlank
 fun main() {
     day(n = 5) {
         part1 { input ->
-            val (top, bottom) = input.lines.sliceByBlank()
-
-            val needToBeBeforeMe = top.map { string -> string.split("|").map(String::toInt) }
-                .map { (a, b) -> a to b }
-                .groupBy { pair -> pair.second }
-                .mapValues { entry -> entry.value.map { pair -> pair.first } }
-
-            val lines = bottom.map { string -> string.split(",").map(String::toInt) }
-
-            lines.filter { line ->
-                line.forEachIndexed { index, number ->
-                    val numbersShouldNotBeAfter = needToBeBeforeMe[number]?.toSet() ?: emptySet()
-                    val end = line.subList(index + 1, line.size)
-                    val validEnd = end.all { n -> n !in numbersShouldNotBeAfter }
-                    if (!validEnd) {
-                        return@filter false
-                    }
-                }
-                true
-            }.sumOf { ints -> ints[ints.size / 2] }
+            val (rules, updates) = parseInput(input)
+            updates
+                .filter { update -> update.isValid(rules) }
+                .sumOf { numbers -> numbers[numbers.size / 2] }
         }
         verify {
             expect result 5208
@@ -37,51 +22,19 @@ fun main() {
         }
 
         part2 { input ->
-            val (top, bottom) = input.lines.sliceByBlank()
-
-            val needToBeBeforeMe = top.map { string -> string.split("|").map(String::toInt) }
-                .map { (a, b) -> a to b }
-                .groupBy { pair -> pair.second }
-                .mapValues { entry -> entry.value.map { pair -> pair.first } }
-
-            val lines = bottom.map { string -> string.split(",").map(String::toInt) }
-
-            val invalidLines = lines.filter { line ->
-                line.forEachIndexed { index, number ->
-                    val numbersShouldNotBeAfter = needToBeBeforeMe[number]?.toSet() ?: emptySet()
-                    val end = line.subList(index + 1, line.size)
-                    val validEnd = end.all { n -> n !in numbersShouldNotBeAfter }
-                    if (!validEnd) {
-                        return@filter true
+            val (rules, updates) = parseInput(input)
+            updates
+                .filterNot { update -> update.isValid(rules) }
+                .map { line ->
+                    line.sortedWith { o1, o2 ->
+                        when {
+                            o2 in rules[o1].orEmpty() -> -1
+                            o1 in rules[o2].orEmpty() -> 1
+                            else -> 0
+                        }
                     }
                 }
-                false
-            }
-
-            "invalid lines:".log()
-            invalidLines.joinToString("\n").log()
-
-            val sorted = invalidLines.map { line ->
-                line.sortedWith { o1, o2 ->
-                    val pre1 = needToBeBeforeMe[o1]?.toSet() ?: emptySet()
-                    val pre2 = needToBeBeforeMe[o2]?.toSet() ?: emptySet()
-
-                    if (o2 in pre1) {
-                        -1
-                    } else if (o1 in pre2) {
-                        1
-                    } else {
-                        0
-                    }
-                }
-            }
-
-            "sorted lists:".log()
-            sorted.joinToString("\n").log()
-
-            sorted.sumOf { ints -> ints[ints.size / 2] }
-
-
+                .sumOf { numbers -> numbers[numbers.size / 2] }
         }
         verify {
             expect result 6732
@@ -89,3 +42,28 @@ fun main() {
         }
     }
 }
+
+private fun Collection<Int>.isValid(rulesMap: Map<Int, Set<Int>>): Boolean {
+    val deque = ArrayDeque(this)
+    while (deque.isNotEmpty()) {
+        val number = deque.removeFirst()
+        val notAllowed = rulesMap[number].orEmpty()
+        if (deque.any { n -> n in notAllowed }) {
+            return false
+        }
+    }
+    return true
+}
+
+private fun parseInput(input: Input): Pair<Map<Int, Set<Int>>, List<List<Int>>> =
+    input.lines.sliceByBlank()
+        .let { (top, bottom) -> createRequirementsMap(top) to createUpdatesList(bottom) }
+
+private fun createUpdatesList(bottom: List<String>): List<List<Int>> =
+    bottom.map { it.split(",").map(String::toInt) }
+
+private fun createRequirementsMap(top: List<String>): Map<Int, Set<Int>> =
+    top.map { it.split("|").map(String::toInt) }
+        .map { (a, b) -> a to b }
+        .groupBy { (_, b) -> b }
+        .mapValues { (_, value) -> value.map { it.first }.toSet() }
