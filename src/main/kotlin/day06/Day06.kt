@@ -14,8 +14,8 @@ fun main() {
     day(n = 6) {
         part1 { input ->
             val grid = input.grid
-            var guard = grid.entries.first { (_, value) -> value == '^' }.key
-            walkAndCountSteps(guard, grid)
+            var guardStart = grid.entries.first { it.value == '^' }.key
+            calculatePointsOnPath(guardStart, grid).size
         }
         verify {
             expect result 4903
@@ -24,11 +24,12 @@ fun main() {
 
         part2 { input ->
             val grid = input.grid.toMutableMap()
-            var guard = grid.entries.first { (_, value) -> value == '^' }.key
-            grid.filterValues { it == '.' }.keys
+            var guardStart = grid.entries.first { it.value == '^' }.key
+            // no point in placing an obstacle where the guard do not walk...
+            (calculatePointsOnPath(guardStart, grid) - guardStart)
                 .count { point ->
                     grid[point] = '#'
-                    val hasLoop = lookForLoop(guard, grid)
+                    val hasLoop = lookForLoop(guardStart, grid)
                     grid[point] = '.'
                     hasLoop
                 }
@@ -40,10 +41,10 @@ fun main() {
     }
 }
 
-private fun walkAndCountSteps(
+private fun calculatePointsOnPath(
     guard: Point,
     grid: Map<Point, Char>,
-): Int {
+): Set<Point> {
     var guard1 = guard
     var direction = Direction.Up
     val visited = mutableSetOf(guard1)
@@ -58,7 +59,7 @@ private fun walkAndCountSteps(
             }
         }
     }
-    return visited.size
+    return visited
 }
 
 private fun lookForLoop(
