@@ -14,22 +14,8 @@ fun main() {
     day(n = 6) {
         part1 { input ->
             val grid = input.grid
-            var guard = grid.entries.find { (_, value) -> value == '^' }!!.key
-
-            var direction = Direction.Up
-            val visited = mutableSetOf<Point>(guard)
-            while (true) {
-                val next = guard.nextInDirection(direction)
-                when (grid[next]) {
-                    null -> break
-                    '#' -> direction = direction.nextCW
-                    else -> {
-                        guard = next
-                        visited.add(next)
-                    }
-                }
-            }
-            visited.size
+            var guard = grid.entries.first { (_, value) -> value == '^' }.key
+            walkAndCountSteps(guard, grid)
         }
         verify {
             expect result 4903
@@ -38,12 +24,13 @@ fun main() {
 
         part2 { input ->
             val grid = input.grid.toMutableMap()
-            var guard = grid.entries.find { (_, value) -> value == '^' }!!.key
-
-            grid.filterValues { value -> value == '.' }.keys
+            var guard = grid.entries.first { (_, value) -> value == '^' }.key
+            grid.filterValues { it == '.' }.keys
                 .count { point ->
                     grid[point] = '#'
-                    hasLoop(guard, grid).also { grid[point] = '.'  }
+                    val hasLoop = lookForLoop(guard, grid)
+                    grid[point] = '.'
+                    hasLoop
                 }
         }
         verify {
@@ -53,22 +40,44 @@ fun main() {
     }
 }
 
-private fun hasLoop(initialGuard: Point, grid: Map<Point, Char>): Boolean {
+private fun walkAndCountSteps(
+    guard: Point,
+    grid: Map<Point, Char>,
+): Int {
+    var guard1 = guard
+    var direction = Direction.Up
+    val visited = mutableSetOf(guard1)
+    while (true) {
+        val next = guard1.nextInDirection(direction)
+        when (grid[next]) {
+            null -> break
+            '#' -> direction = direction.nextCW
+            else -> {
+                guard1 = next
+                visited.add(next)
+            }
+        }
+    }
+    return visited.size
+}
+
+private fun lookForLoop(
+    initialGuard: Point,
+    grid: Map<Point, Char>,
+): Boolean {
     var guard = initialGuard
     var direction = Direction.Up
-    val visitedWithDirection = mutableSetOf(guard to direction)
+    val seenStates = mutableSetOf(guard to direction)
     while (true) {
-        val next = guard.nextInDirection(direction)
-        if (next to direction in visitedWithDirection) {
-            return true
-        }
-
+        var next = guard.nextInDirection(direction)
+        val state = next to direction
+        if (state in seenStates) return true
         when (grid[next]) {
             null -> return false
             '#' -> direction = direction.nextCW
             else -> {
                 guard = next
-                visitedWithDirection.add(next to direction)
+                seenStates.add(state)
             }
         }
     }
