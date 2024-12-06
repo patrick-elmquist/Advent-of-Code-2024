@@ -18,18 +18,15 @@ fun main() {
 
             var direction = Direction.Up
             val visited = mutableSetOf<Point>(guard)
-
             while (true) {
                 val next = guard.nextInDirection(direction)
-                if (next in grid.keys) {
-                    if (grid.getValue(next) != '#') {
+                when (grid[next]) {
+                    null -> break
+                    '#' -> direction = direction.nextCW
+                    else -> {
                         guard = next
                         visited.add(next)
-                    } else {
-                        direction = direction.nextCW
                     }
-                } else {
-                    break
                 }
             }
             visited.size
@@ -40,14 +37,13 @@ fun main() {
         }
 
         part2 { input ->
-            val grid = input.grid
+            val grid = input.grid.toMutableMap()
             var guard = grid.entries.find { (_, value) -> value == '^' }!!.key
 
-            grid.filterValues { value -> value == '.' }
-                .keys
+            grid.filterValues { value -> value == '.' }.keys
                 .count { point ->
-                    val newGrid = grid.toMutableMap().apply { put(point, '#') }
-                    run(guard, newGrid)
+                    grid[point] = '#'
+                    hasLoop(guard, grid).also { grid[point] = '.'  }
                 }
         }
         verify {
@@ -57,28 +53,23 @@ fun main() {
     }
 }
 
-private fun run(initialGuard: Point, input: Map<Point, Char>): Boolean {
+private fun hasLoop(initialGuard: Point, grid: Map<Point, Char>): Boolean {
     var guard = initialGuard
-    val grid = input
-
     var direction = Direction.Up
     val visitedWithDirection = mutableSetOf(guard to direction)
-
     while (true) {
         val next = guard.nextInDirection(direction)
         if (next to direction in visitedWithDirection) {
             return true
         }
-        val nextValue = grid[next]
-        if (nextValue != null) {
-            if (nextValue != '#') {
+
+        when (grid[next]) {
+            null -> return false
+            '#' -> direction = direction.nextCW
+            else -> {
                 guard = next
                 visitedWithDirection.add(next to direction)
-            } else {
-                direction = direction.nextCW
             }
-        } else {
-            break
         }
     }
     return false
