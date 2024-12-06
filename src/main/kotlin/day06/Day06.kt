@@ -22,7 +22,7 @@ fun main() {
             while (true) {
                 val next = guard.nextInDirection(direction)
                 if (next in grid.keys) {
-                    if (grid[next]!! != '#') {
+                    if (grid.getValue(next) != '#') {
                         guard = next
                         visited.add(next)
                     } else {
@@ -43,13 +43,12 @@ fun main() {
             val grid = input.grid
             var guard = grid.entries.find { (_, value) -> value == '^' }!!.key
 
-            val available = grid.filterValues { value -> value == '.' }.keys
-            available.count { point ->
-                val newGrid = grid.mapValues { (key, value) ->
-                    if (key == point) '#' else value
+            grid.filterValues { value -> value == '.' }
+                .keys
+                .count { point ->
+                    val newGrid = grid.toMutableMap().apply { put(point, '#') }
+                    run(guard, newGrid)
                 }
-                run(guard, newGrid)
-            }
         }
         verify {
             expect result 1911
@@ -70,8 +69,9 @@ private fun run(initialGuard: Point, input: Map<Point, Char>): Boolean {
         if (next to direction in visitedWithDirection) {
             return true
         }
-        if (next in grid.keys) {
-            if (grid[next]!! != '#') {
+        val nextValue = grid[next]
+        if (nextValue != null) {
+            if (nextValue != '#') {
                 guard = next
                 visitedWithDirection.add(next to direction)
             } else {
