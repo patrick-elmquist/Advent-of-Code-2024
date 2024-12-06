@@ -13,8 +13,8 @@ import common.util.nextInDirection
 fun main() {
     day(n = 6) {
         part1 { input ->
-            var guard = input.grid.entries.find { (_, value) -> value == '^' }!!.key
             val grid = input.grid
+            var guard = grid.entries.find { (_, value) -> value == '^' }!!.key
 
             var direction = Direction.Up
             val visited = mutableSetOf<Point>(guard)
@@ -40,13 +40,13 @@ fun main() {
         }
 
         part2 { input ->
-            var guard = input.grid.entries.find { (_, value) -> value == '^' }!!.key
             val grid = input.grid
+            var guard = grid.entries.find { (_, value) -> value == '^' }!!.key
 
-            val available = grid.filter { (key, value) -> key != guard && value == '.' }
-            available.count { entry ->
+            val available = grid.filterValues { value -> value == '.' }.keys
+            available.count { point ->
                 val newGrid = grid.mapValues { (key, value) ->
-                    if (key == entry.key) '#' else value
+                    if (key == point) '#' else value
                 }
                 run(guard, newGrid)
             }
