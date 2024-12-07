@@ -11,7 +11,7 @@ fun main() {
         part1 { input ->
             parseInputToExpectedAndValues(input)
                 .filter { (result, values) ->
-                    solve(result, values, useCombine = false)
+                    isValid(result, values, useCombine = false)
                 }
                 .sumOf { (expected, _) -> expected }
         }
@@ -23,7 +23,7 @@ fun main() {
         part2 { input ->
             parseInputToExpectedAndValues(input)
                 .filter { (result, values) ->
-                    solve(result, values, useCombine = true)
+                    isValid(result, values, useCombine = true)
                 }
                 .sumOf { (expected, _) -> expected }
         }
@@ -34,7 +34,7 @@ fun main() {
     }
 }
 
-private fun solve(expected: Long, values: List<Long>, useCombine: Boolean): Boolean =
+private fun isValid(expected: Long, values: List<Long>, useCombine: Boolean): Boolean =
     evaluate(expected, values.first(), values.drop(1), useCombine)
 
 private fun evaluate(expected: Long, current: Long, values: List<Long>, useCombine: Boolean = false): Boolean {
