@@ -1,5 +1,7 @@
 package common
 
+import common.util.loggingEnabled
+
 class Sheet(val day: Int) {
     private lateinit var solver1: Solver
     private lateinit var config1: Config
@@ -30,18 +32,28 @@ class Sheet(val day: Int) {
     }
 }
 
+@Suppress("unused")
 class ConfigBuilder(private val day: Int) {
     val run: TestBuilder get() = TestBuilder()
     val expect: ConfigBuilder get() = this
 
     private var ignore: Boolean = false
     private var breakAfterTest: Boolean = false
-    private var expectedResult: Any? = null
 
+    private var expectedResult: Any? = null
     private val tests = mutableListOf<Test>()
 
-    infix fun ConfigBuilder.result(result: Any?) =
-        apply { expectedResult = result }
+    fun ConfigBuilder.ignore() {
+        ignore = true
+    }
+
+    fun ConfigBuilder.breakAfterTest() {
+        breakAfterTest = true
+    }
+
+    infix fun ConfigBuilder.result(result: Any?) {
+        expectedResult = result
+    }
 
     infix fun TestBuilder.test(test: Int): TestBuilder =
         apply { input = Input(day = day, test = test) }
@@ -63,6 +75,6 @@ class ConfigBuilder(private val day: Int) {
         expected = expectedResult,
         tests = tests.toList(),
         ignore = ignore,
-        breakAfterTest = breakAfterTest
+        breakAfterTest = breakAfterTest,
     )
 }
