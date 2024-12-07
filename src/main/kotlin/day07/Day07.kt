@@ -10,8 +10,8 @@ fun main() {
     day(n = 7) {
         part1 { input ->
             parseInputToExpectedAndValues(input)
-                .filter { (result, values) ->
-                    isValid(result, values, useCombine = false)
+                .filter { (expected, values) ->
+                    isValid(expected, values, useCombine = false)
                 }
                 .sumOf { (expected, _) -> expected }
         }
@@ -22,8 +22,8 @@ fun main() {
 
         part2 { input ->
             parseInputToExpectedAndValues(input)
-                .filter { (result, values) ->
-                    isValid(result, values, useCombine = true)
+                .filter { (expected, values) ->
+                    isValid(expected, values, useCombine = true)
                 }
                 .sumOf { (expected, _) -> expected }
         }
@@ -37,7 +37,12 @@ fun main() {
 private fun isValid(expected: Long, values: List<Long>, useCombine: Boolean): Boolean =
     evaluate(expected, values.first(), values.drop(1), useCombine)
 
-private fun evaluate(expected: Long, current: Long, values: List<Long>, useCombine: Boolean = false): Boolean {
+private fun evaluate(
+    expected: Long,
+    current: Long,
+    values: List<Long>,
+    useCombine: Boolean = false,
+): Boolean {
     if (values.isEmpty()) return current == expected
 
     val value = values.first()
