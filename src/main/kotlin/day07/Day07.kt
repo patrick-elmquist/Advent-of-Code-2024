@@ -44,6 +44,7 @@ private fun evaluate(
     useCombine: Boolean = false,
 ): Boolean {
     if (values.isEmpty()) return current == expected
+    if (current > expected) return false
 
     val value = values.first()
     val remaining = values.drop(1)
