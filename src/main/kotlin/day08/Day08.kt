@@ -11,17 +11,16 @@ fun main() {
     day(n = 8) {
         part1 { input ->
             val grid = input.grid
-            val antennas = parseAntennasByType(grid)
+            val antennas = parseAntennaPositionsByType(grid)
 
             val antinodes = mutableSetOf<Point>()
-            antennas.map { (_, points) ->
-                for (p1 in points) {
-                    for (p2 in points) {
+            for (positions in antennas) {
+                for (p1 in positions) {
+                    for (p2 in positions) {
+                        if (p1 == p2) continue
                         val distanceToNext = p1 - p2
-                        if (distanceToNext != Point.Zero) {
-                            antinodes += p1 + distanceToNext
-                            antinodes += p2 - distanceToNext
-                        }
+                        antinodes += p1 + distanceToNext
+                        antinodes += p2 - distanceToNext
                     }
                 }
             }
@@ -35,25 +34,24 @@ fun main() {
 
         part2 { input ->
             val grid = input.grid
-            val antennas = parseAntennasByType(grid)
+            val antennas = parseAntennaPositionsByType(grid)
 
             val antinodes = mutableSetOf<Point>()
-            antennas.map { (_, points) ->
-                for (p1 in points) {
-                    for (p2 in points) {
+            for (positions in antennas) {
+                for (p1 in positions) {
+                    for (p2 in positions) {
+                        if (p1 == p2) continue
                         val distanceToNext = p1 - p2
-                        if (distanceToNext != Point.Zero) {
-                            var next = p1 + distanceToNext
-                            while (next in grid) {
-                                antinodes.add(next)
-                                next += distanceToNext
-                            }
+                        var next = p1 + distanceToNext
+                        while (next in grid) {
+                            antinodes.add(next)
+                            next += distanceToNext
+                        }
 
-                            next = p1 - distanceToNext
-                            while (next in grid) {
-                                antinodes.add(next)
-                                next -= distanceToNext
-                            }
+                        next = p1 - distanceToNext
+                        while (next in grid) {
+                            antinodes.add(next)
+                            next -= distanceToNext
                         }
                     }
                 }
@@ -68,8 +66,8 @@ fun main() {
     }
 }
 
-private fun parseAntennasByType(grid: Map<Point, Char>): List<Pair<Char, List<Point>>> =
+private fun parseAntennaPositionsByType(grid: Map<Point, Char>): List<List<Point>> =
     grid.filter { it.value != '.' }
         .entries
         .groupBy { (_, value) -> value }
-        .map { (key, value) -> key to value.map { it.key } }
+        .map { (_, value) -> value.map { it.key } }
