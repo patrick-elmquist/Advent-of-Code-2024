@@ -2,6 +2,9 @@ package day07
 
 import common.Input
 import common.day
+import kotlin.math.ceil
+import kotlin.math.log
+import kotlin.math.pow
 
 // answer #1: 303766880536
 // answer #2: 337041851384440
@@ -51,8 +54,11 @@ private fun evaluate(
 
     if (evaluate(expected, current + value, remaining, useCombine)) return true
     if (evaluate(expected, current * value, remaining, useCombine)) return true
-    return useCombine && evaluate(expected, "$current$value".toLong(), remaining, useCombine)
+    return useCombine && evaluate(expected, concat(current, value), remaining, useCombine)
 }
+
+private fun concat(current: Long, value: Long): Long =
+    (current * 10.0.pow(ceil(log(value + 1.0, 10.0))) + value).toLong()
 
 private fun parseInputToExpectedAndValues(input: Input): List<Pair<Long, List<Long>>> =
     input.lines.map { line ->
