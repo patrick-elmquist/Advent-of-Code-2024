@@ -18,6 +18,7 @@ fun main() {
                 for (p1 in positions) {
                     for (p2 in positions) {
                         if (p1 == p2) continue
+
                         val distanceToNext = p1 - p2
                         antinodes += p1 + distanceToNext
                         antinodes += p2 - distanceToNext
@@ -41,6 +42,7 @@ fun main() {
                 for (p1 in positions) {
                     for (p2 in positions) {
                         if (p1 == p2) continue
+
                         val distanceToNext = p1 - p2
                         var next = p1 + distanceToNext
                         while (next in grid) {
