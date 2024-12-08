@@ -44,28 +44,28 @@ fun main() {
 }
 
 private val horizontalPoints = sequenceOf(
-    Point.ZERO,
+    Point.Zero,
     Point(1, 0),
     Point(2, 0),
     Point(3, 0)
 )
 
 private val verticalPoints = sequenceOf(
-    Point.ZERO,
+    Point.Zero,
     Point(0, 1),
     Point(0, 2),
     Point(0, 3),
 )
 
 private val diagonalLeftPoints = sequenceOf(
-    Point.ZERO,
+    Point.Zero,
     Point(-1, 1),
     Point(-2, 2),
     Point(-3, 3),
 )
 
 private val diagonalRightPoints = sequenceOf(
-    Point.ZERO,
+    Point.Zero,
     Point(1, 1),
     Point(2, 2),
     Point(3, 3),

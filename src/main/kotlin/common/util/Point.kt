@@ -12,7 +12,7 @@ data class Point(val x: Int, val y: Int) {
     operator fun minus(point: Point) = Point(x - point.x, y - point.y)
 
     companion object {
-        val ZERO = Point(0, 0)
+        val Zero = Point(0, 0)
     }
 }
 

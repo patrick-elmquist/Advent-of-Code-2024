@@ -3,7 +3,6 @@ package day08
 import common.day
 import common.grid
 import common.util.Point
-import common.util.print
 
 // answer #1: 308
 // answer #2: 1147
@@ -14,20 +13,20 @@ fun main() {
             val grid = input.grid
             val antennas = parseAntennasByType(grid)
 
-            val p = mutableSetOf<Point>()
+            val antinodes = mutableSetOf<Point>()
             antennas.map { (_, points) ->
-                points.forEach { p1 ->
-                    points.filter { it != p1  }
-                        .forEach { p2 ->
-                            val diffX = Point(p1.x - p2.x, p1.y - p2.y)
-                            val diffY = Point(p2.x - p1.x, p2.y - p1.y)
-                            p.add(p1 + diffX)
-                            p.add(p2 + diffY)
+                for (p1 in points) {
+                    for (p2 in points) {
+                        val distanceToNext = p1 - p2
+                        if (distanceToNext != Point.Zero) {
+                            antinodes += p1 + distanceToNext
+                            antinodes += p2 - distanceToNext
                         }
+                    }
                 }
             }
 
-            p.count { point -> point in grid.keys }
+            antinodes.count { it in grid }
         }
         verify {
             expect result 308
@@ -38,28 +37,29 @@ fun main() {
             val grid = input.grid
             val antennas = parseAntennasByType(grid)
 
-            val p = mutableSetOf<Point>()
+            val antinodes = mutableSetOf<Point>()
             antennas.map { (_, points) ->
-                points.forEach { p1 ->
-                    points.filter { it != p1  }
-                        .forEach { p2 ->
-                            val diffX = Point(p1.x - p2.x, p1.y - p2.y)
-
-                            var newPoint1 = p1 + diffX
-                            while (newPoint1 in grid) {
-                                p.add(newPoint1)
-                                newPoint1 += diffX
+                for (p1 in points) {
+                    for (p2 in points) {
+                        val distanceToNext = p1 - p2
+                        if (distanceToNext != Point.Zero) {
+                            var next = p1 + distanceToNext
+                            while (next in grid) {
+                                antinodes.add(next)
+                                next += distanceToNext
                             }
-                            var newPoint2 = p1 - diffX
-                            while (newPoint2 in grid) {
-                                p.add(newPoint2)
-                                newPoint2 -= diffX
+
+                            next = p1 - distanceToNext
+                            while (next in grid) {
+                                antinodes.add(next)
+                                next -= distanceToNext
                             }
                         }
+                    }
                 }
             }
 
-            p.count { point -> point in grid.keys }
+            antinodes.count { it in grid }
         }
         verify {
             expect result 1147
@@ -68,8 +68,8 @@ fun main() {
     }
 }
 
-private fun parseAntennasByType(grid: Map<Point, Char>): List<Pair<Char, List<Point>>> = grid
-    .filter { it.value != '.' }
-    .entries
-    .groupBy { entry -> entry.value }
-    .map { entry -> entry.key to entry.value.map { entry -> entry.key } }
+private fun parseAntennasByType(grid: Map<Point, Char>): List<Pair<Char, List<Point>>> =
+    grid.filter { it.value != '.' }
+        .entries
+        .groupBy { (_, value) -> value }
+        .map { (key, value) -> key to value.map { it.key } }
