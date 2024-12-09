@@ -40,8 +40,8 @@ private fun compressFiles(input: List<Space>): MutableList<File> {
             is File -> files += item
             is AvailableSpace -> {
                 var space: AvailableSpace = item
-                while (space.size > 0) {
-                    file = file ?: findLastFile(array)
+                while (true) {
+                    file = file ?: array.findLastFile()
                     when {
                         file == null -> break
 
@@ -57,7 +57,7 @@ private fun compressFiles(input: List<Space>): MutableList<File> {
                         else -> {
                             files += file.copy(size = space.size, offset = space.offset)
                             file = file.copy(size = file.size - space.size)
-                            space = space.copy(size = 0)
+                            break
                         }
                     }
                 }
@@ -72,22 +72,21 @@ private fun moveFiles(filesAndSpace: List<Space>): MutableList<File> {
     var array = ArrayDeque(filesAndSpace)
     val files = mutableListOf<File>()
     while (array.isNotEmpty()) {
-        val file = array.removeLast()
-        when (file) {
+        when (val file = array.removeLast()) {
             is File -> {
-                files += when (val index = array.indexOfAvailableSpace(file)) {
-                    -1 -> file
+                when (val index = array.indexOfSpaceMatching(file)) {
+                    -1 -> files += file
                     else -> {
                         val availableSpace = array[index] as AvailableSpace
                         if (availableSpace.size == file.size) {
                             array.removeAt(index)
-                            file.copy(offset = availableSpace.offset)
+                            files += file.copy(offset = availableSpace.offset)
                         } else {
                             array[index] = availableSpace.copy(
                                 size = availableSpace.size - file.size,
                                 offset = availableSpace.offset + file.size,
                             )
-                            file.copy(offset = availableSpace.offset)
+                            files += file.copy(offset = availableSpace.offset)
                         }
                     }
                 }
@@ -99,18 +98,18 @@ private fun moveFiles(filesAndSpace: List<Space>): MutableList<File> {
     return files
 }
 
-private fun ArrayDeque<Space>.indexOfAvailableSpace(next: File): Int =
+private fun ArrayDeque<Space>.indexOfSpaceMatching(file: File): Int =
     indexOfFirst { space ->
         when (space) {
-            is AvailableSpace -> space.size >= next.size
+            is AvailableSpace -> space.size >= file.size
             is File -> false
         }
     }
 
-private fun findLastFile(array: ArrayDeque<Space>): File? =
-    when (val next = array.removeLastOrNull()) {
+private fun ArrayDeque<Space>.findLastFile(): File? =
+    when (val next = removeLastOrNull()) {
         null -> null
-        is AvailableSpace -> array.removeLastOrNull() as? File
+        is AvailableSpace -> removeLastOrNull() as? File
         is File -> next
     }
 
