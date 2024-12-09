@@ -1,69 +1,17 @@
 package day09
 
-import common.Input
 import common.day
+import day09.Space.AvailableSpace
+import day09.Space.File
 
 // answer #1: 6332189866718
 // answer #2: 6353648390778
 
-private sealed interface Space {
-    val size: Int
-    val offset: Int
-
-    data class File(override val size: Int, val id: Int, override val offset: Int) : Space {
-        fun sum(): Long {
-            var sum = 0L
-            for (i in offset..< offset + size) {
-                sum += i * id
-            }
-            return sum
-        }
-    }
-
-    data class Empty(override val size: Int, override val offset: Int) : Space
-}
-
 fun main() {
     day(n = 9) {
         part1 { input ->
-            val array = ArrayDeque(parseInput(input))
-
-            var currentFile: Space.File? = null
-            val list = mutableListOf<Space.File>()
-            while (array.isNotEmpty()) {
-                val next = array.removeFirst()
-
-                when (next) {
-                    is Space.File -> list += next
-                    is Space.Empty -> {
-                        var empty: Space.Empty = next
-
-                        while (empty.size > 0) {
-                            currentFile = currentFile ?: findLastFile(array)
-
-                            if (currentFile == null) break
-
-                            val fileSize = currentFile.size
-                            val offset = empty.offset
-                            val availableSpace = empty.size
-
-                            if (fileSize <= availableSpace) {
-                                list += currentFile.copy(offset = offset)
-                                empty = empty.copy(
-                                    offset = offset + fileSize,
-                                    size = availableSpace - fileSize,
-                                )
-                                currentFile = null
-                            } else {
-                                list += currentFile.copy(size = availableSpace, offset = offset)
-                                empty = empty.copy(size = 0)
-                                currentFile = currentFile.copy(size = fileSize - availableSpace)
-                            }
-                        }
-                    }
-                }
-            }
-            list.sumOf { it.sum() } + (currentFile?.sum() ?: 0)
+            val filesAndFreeSpace = parseAndExpandDiskMap(input.lines.first())
+            compressFiles(filesAndFreeSpace).sumOf(::checksum)
         }
         verify {
             expect result 6332189866718L
@@ -71,39 +19,8 @@ fun main() {
         }
 
         part2 { input ->
-            var array = ArrayDeque(parseInput(input))
-            val list = mutableListOf<Space.File>()
-            while(array.isNotEmpty()) {
-                val next = array.removeLast()
-                when (next) {
-                    is Space.File -> {
-                        val index = array.indexOfFirst { space ->
-                            when (space) {
-                                is Space.Empty -> space.size >= next.size
-                                is Space.File -> false
-                            }
-                        }
-
-                        if (index > -1) {
-                            val empty = array[index] as Space.Empty
-                            if (empty.size == next.size) {
-                                array.removeAt(index)
-                                list += next.copy(offset = empty.offset)
-                            } else {
-                                array[index] = empty.copy(
-                                    size = empty.size - next.size,
-                                    offset = empty.offset + next.size,
-                                )
-                                list += next.copy(offset = empty.offset)
-                            }
-                        } else {
-                            list += next
-                        }
-                    }
-                    is Space.Empty -> continue
-                }
-            }
-            list.sumOf { it.sum() }
+            val filesAndFreeSpace = parseAndExpandDiskMap(input.lines.first())
+            moveFiles(filesAndFreeSpace).sumOf(::checksum)
         }
         verify {
             expect result 6353648390778L
@@ -112,21 +29,108 @@ fun main() {
     }
 }
 
-private fun findLastFile(array: ArrayDeque<Space>): Space.File? =
-    when (val next = array.removeLastOrNull()) {
-        null -> null
-        is Space.Empty -> array.removeLastOrNull() as? Space.File
-        is Space.File -> next
+private fun compressFiles(input: List<Space>): MutableList<File> {
+    val array = ArrayDeque(input)
+    var file: File? = null
+    val files = mutableListOf<File>()
+    while (array.isNotEmpty()) {
+        val item = array.removeFirst()
+
+        when (item) {
+            is File -> files += item
+            is AvailableSpace -> {
+                var space: AvailableSpace = item
+                while (space.size > 0) {
+                    file = file ?: findLastFile(array)
+                    when {
+                        file == null -> break
+
+                        file.size <= space.size -> {
+                            files += file.copy(offset = space.offset)
+                            space = space.copy(
+                                offset = space.offset + file.size,
+                                size = space.size - file.size,
+                            )
+                            file = null
+                        }
+
+                        else -> {
+                            files += file.copy(size = space.size, offset = space.offset)
+                            file = file.copy(size = file.size - space.size)
+                            space = space.copy(size = 0)
+                        }
+                    }
+                }
+            }
+        }
+    }
+    file?.let { files += it }
+    return files
+}
+
+private fun moveFiles(filesAndSpace: List<Space>): MutableList<File> {
+    var array = ArrayDeque(filesAndSpace)
+    val files = mutableListOf<File>()
+    while (array.isNotEmpty()) {
+        val file = array.removeLast()
+        when (file) {
+            is File -> {
+                files += when (val index = array.indexOfAvailableSpace(file)) {
+                    -1 -> file
+                    else -> {
+                        val availableSpace = array[index] as AvailableSpace
+                        if (availableSpace.size == file.size) {
+                            array.removeAt(index)
+                            file.copy(offset = availableSpace.offset)
+                        } else {
+                            array[index] = availableSpace.copy(
+                                size = availableSpace.size - file.size,
+                                offset = availableSpace.offset + file.size,
+                            )
+                            file.copy(offset = availableSpace.offset)
+                        }
+                    }
+                }
+            }
+
+            is AvailableSpace -> continue
+        }
+    }
+    return files
+}
+
+private fun ArrayDeque<Space>.indexOfAvailableSpace(next: File): Int =
+    indexOfFirst { space ->
+        when (space) {
+            is AvailableSpace -> space.size >= next.size
+            is File -> false
+        }
     }
 
-private fun parseInput(input: Input): List<Space> {
-    val line = input.lines.first()
-    var offset = 0
-    return line.map { it.digitToInt() }.mapIndexed { index, n ->
-        if (index % 2 == 0) {
-            Space.File(size = n, id = index / 2, offset = offset)
-        } else {
-            Space.Empty(size = n, offset = offset)
-        }.also { offset += n }
+private fun findLastFile(array: ArrayDeque<Space>): File? =
+    when (val next = array.removeLastOrNull()) {
+        null -> null
+        is AvailableSpace -> array.removeLastOrNull() as? File
+        is File -> next
     }
+
+private fun parseAndExpandDiskMap(diskMap: String): List<Space> {
+    var offset = 0
+    return diskMap
+        .map { it.digitToInt() }
+        .mapIndexed { index, n ->
+            if (index % 2 == 0) {
+                File(size = n, offset = offset, id = index / 2)
+            } else {
+                AvailableSpace(size = n, offset = offset)
+            }.also { offset += n }
+        }
+}
+
+private fun checksum(file: File): Long =
+    (file.offset.toLong()..<file.offset.toLong() + file.size).sumOf { it * file.id }
+
+private sealed interface Space {
+    data class File(val size: Int, val offset: Int, val id: Int) : Space
+    data class AvailableSpace(val size: Int, val offset: Int) : Space
 }
