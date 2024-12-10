@@ -36,19 +36,18 @@ fun main() {
 
 private fun parseMap(input: Input): Map<Point, Int> =
     input.grid
-        .filterValues { it != '.' }
-        .mapValues { it.value.digitToInt() }
+        .filterValues { c -> c != '.' }
+        .mapValues { (_, c) -> c.digitToInt() }
 
 private fun findTrails(zero: Point, map: Map<Point, Int>): List<Point> =
     buildList {
         val queue = arrayDequeOf(zero)
         while (queue.isNotEmpty()) {
-            val current = queue.removeFirst()
-            val value = map.getValue(current)
+            val (tile, value) = queue.removeFirst().let { it to map.getValue(it) }
             if (value == 9) {
-                add(current)
+                add(tile)
             } else {
-                queue.addAll(current.neighbors().filter { map[it] == value + 1 })
+                queue.addAll(tile.neighbors().filter { map[it] == value + 1 })
             }
         }
     }
