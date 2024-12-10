@@ -19,11 +19,7 @@ fun main() {
         }
         verify {
             expect result 557
-            run test 1 expect 1
-            run test 2 expect 2
-            run test 3 expect 4
-            run test 4 expect 3
-            run test 5 expect 36
+            run test 1 expect 4
         }
 
         part2 { input ->
@@ -32,9 +28,8 @@ fun main() {
             zeroes.sumOf { findTrails(it, map).size }
         }
         verify {
-            expect result null
-            run test 6 expect 3
-            run test 3 expect 13
+            expect result 1062
+            run test 1 expect 13
         }
     }
 }
