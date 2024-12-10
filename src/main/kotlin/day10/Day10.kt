@@ -44,16 +44,16 @@ private fun parseMap(input: Input): Map<Point, Int> =
         .filterValues { it != '.' }
         .mapValues { it.value.digitToInt() }
 
-private fun followTrail(zero: Point, grid: Map<Point, Int>): List<Point> =
+private fun followTrail(zero: Point, map: Map<Point, Int>): List<Point> =
     buildList {
         val queue = arrayDequeOf(zero)
         while (queue.isNotEmpty()) {
             val current = queue.removeFirst()
-            val value = grid.getValue(current)
+            val value = map.getValue(current)
             if (value == 9) {
                 add(current)
             } else {
-                queue.addAll(current.neighbors().filter { grid[it] == value + 1 })
+                queue.addAll(current.neighbors().filter { map[it] == value + 1 })
             }
         }
     }
