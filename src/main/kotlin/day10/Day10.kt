@@ -15,7 +15,7 @@ fun main() {
         part1 { input ->
             val map = parseMap(input)
             val zeroes = map.filter { (_, value) -> value == 0 }.keys
-            zeroes.sumOf { followTrail(it, map).toSet().size }
+            zeroes.sumOf { findTrails(it, map).toSet().size }
         }
         verify {
             expect result 557
@@ -29,7 +29,7 @@ fun main() {
         part2 { input ->
             val map = parseMap(input)
             val zeroes = map.filter { (_, value) -> value == 0 }.keys
-            zeroes.sumOf { followTrail(it, map).size }
+            zeroes.sumOf { findTrails(it, map).size }
         }
         verify {
             expect result null
@@ -44,7 +44,7 @@ private fun parseMap(input: Input): Map<Point, Int> =
         .filterValues { it != '.' }
         .mapValues { it.value.digitToInt() }
 
-private fun followTrail(zero: Point, map: Map<Point, Int>): List<Point> =
+private fun findTrails(zero: Point, map: Map<Point, Int>): List<Point> =
     buildList {
         val queue = arrayDequeOf(zero)
         while (queue.isNotEmpty()) {
