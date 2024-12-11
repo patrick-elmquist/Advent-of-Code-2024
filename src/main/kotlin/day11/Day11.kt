@@ -1,6 +1,10 @@
 package day11
 
 import common.day
+import java.lang.Math.pow
+import kotlin.math.abs
+import kotlin.math.log10
+import kotlin.math.pow
 
 // answer #1: 198075
 // answer #2: 235571309320764
@@ -9,7 +13,7 @@ fun main() {
     day(n = 11) {
         part1 { input ->
             val stones = input.lines.first().split(" ").map(String::toLong)
-            stones.sumOf { number -> rec(blinksRemaining = 25, number = number) }
+            stones.sumOf { number -> countStones(blinksRemaining = 25, number = number) }
         }
         verify {
             expect result 198075L
@@ -17,7 +21,7 @@ fun main() {
 
         part2 { input ->
             val stones = input.lines.first().split(" ").map(String::toLong)
-            stones.sumOf { number -> rec(blinksRemaining = 75, number = number) }
+            stones.sumOf { number -> countStones(blinksRemaining = 75, number = number) }
         }
         verify {
             expect result 235571309320764L
@@ -25,37 +29,38 @@ fun main() {
     }
 }
 
-private fun rec(
+private val Long.length: Int
+    get() = when (this) {
+        0L -> 1
+        else -> log10(abs(toDouble())).toInt() + 1
+    }
+
+private fun countStones(
     blinksRemaining: Int,
     number: Long,
     state: MutableMap<Pair<Long, Int>, Long> = mutableMapOf(),
 ): Long {
     if (blinksRemaining == 0) return 1
+
     val cache = state[number to blinksRemaining]
     if (cache != null) return cache
 
-    val list = buildList {
-        if (number == 0L) {
-            add(1L)
-            return@buildList
+    val len = number.length
+    val stones = when {
+        number == 0L -> listOf(1L)
+        len % 2 == 0 -> {
+            listOf(
+                number / 10.0.pow(len / 2).toLong(),
+                number % 10.0.pow(len / 2).toLong(),
+            )
         }
-
-        val string = number.toString()
-        if (string.length % 2 == 0) {
-            val a = string.substring(0, string.length / 2)
-            val b = string.substring(string.length / 2)
-            add(a.toLong())
-            add(b.toLong())
-            return@buildList
-        }
-
-        add(number * 2024L)
+        else -> listOf(number * 2024)
     }
 
-    val result = list.sumOf {
-        rec(
+    val result = stones.sumOf { stone ->
+        countStones(
             blinksRemaining = blinksRemaining - 1,
-            number = it,
+            number = stone,
             state = state,
         )
     }
