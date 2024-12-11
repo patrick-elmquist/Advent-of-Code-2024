@@ -1,7 +1,6 @@
 package day11
 
 import common.day
-import java.lang.Math.pow
 import kotlin.math.abs
 import kotlin.math.log10
 import kotlin.math.pow
