@@ -18,6 +18,10 @@ data class Point(val x: Int, val y: Int) {
 
 data class PointL(val x: Long, val y: Long) {
     constructor(x: String, y: String) : this(x.toLong(), y.toLong())
+    constructor(match: MatchResult.Destructured) : this(
+        match.component1().toLong(),
+        match.component2().toLong(),
+    )
 
     operator fun plus(point: PointL) = PointL(x + point.x, y + point.y)
     operator fun minus(point: PointL) = PointL(x - point.x, y - point.y)
@@ -71,7 +75,7 @@ fun Point.nextInDirection(direction: Direction, steps: Int = 1): Point =
 
 fun Point.neighbors(
     diagonal: Boolean = false,
-    includeSelf: Boolean = false
+    includeSelf: Boolean = false,
 ) = sequence {
     if (diagonal) yield(Point(x - 1, y - 1))
     yield(copy(y = y - 1))
