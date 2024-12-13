@@ -3,6 +3,7 @@ package day13
 import common.Input
 import common.day
 import common.util.PointL
+import common.util.match
 import common.util.sliceByBlank
 
 // answer #1: 33481
@@ -46,8 +47,8 @@ private val prizeRegex = """Prize: X=(\d+), Y=(\d+)""".toRegex()
 private fun parseMachineData(input: Input, extra: PointL = PointL(0L, 0L)) =
     input.lines.sliceByBlank().map { (a, b, t) ->
         MachineData(
-            buttonRegex.matchEntire(a)!!.destructured.let(::PointL),
-            buttonRegex.matchEntire(b)!!.destructured.let(::PointL),
-            prizeRegex.matchEntire(t)!!.destructured.let(::PointL) + extra,
+            a = buttonRegex.match(a).let(::PointL),
+            b = buttonRegex.match(b).let(::PointL),
+            target = prizeRegex.match(t).let(::PointL) + extra,
         )
     }

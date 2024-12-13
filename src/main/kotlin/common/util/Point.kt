@@ -6,8 +6,6 @@ import kotlin.math.abs
  * Class representing a point in 2 dimensions
  */
 data class Point(val x: Int, val y: Int) {
-    constructor(x: String, y: String) : this(x.toInt(), y.toInt())
-
     operator fun plus(point: Point) = Point(x + point.x, y + point.y)
     operator fun minus(point: Point) = Point(x - point.x, y - point.y)
 
@@ -16,35 +14,42 @@ data class Point(val x: Int, val y: Int) {
     }
 }
 
-data class PointL(val x: Long, val y: Long) {
-    constructor(x: String, y: String) : this(x.toLong(), y.toLong())
-    constructor(match: MatchResult.Destructured) : this(
-        match.component1().toLong(),
-        match.component2().toLong(),
-    )
+fun Point(x: String, y: String) = Point(x.toInt(), y.toInt())
+fun Point(match: MatchResult.Destructured) = match.let { (x, y) -> Point(x.toInt(), y.toInt()) }
 
+
+data class PointL(val x: Long, val y: Long) {
     operator fun plus(point: PointL) = PointL(x + point.x, y + point.y)
     operator fun minus(point: PointL) = PointL(x - point.x, y - point.y)
 
     companion object
 }
 
-data class Point3D(val x: Int, val y: Int, val z: Int) {
-    constructor(x: String, y: String, z: String) : this(x.toInt(), y.toInt(), z.toInt())
+fun PointL(x: String, y: String) = PointL(x.toLong(), y.toLong())
+fun PointL(match: MatchResult.Destructured) = match.let { (x, y) -> PointL(x.toLong(), y.toLong()) }
 
+data class Point3D(val x: Int, val y: Int, val z: Int) {
     operator fun plus(point: Point) = Point(x + point.x, y + point.y)
     operator fun minus(point: Point) = Point(x - point.x, y - point.y)
 
     companion object
 }
 
-data class PointL3D(val x: Long, val y: Long, val z: Long) {
-    constructor(x: String, y: String, z: String) : this(x.toLong(), y.toLong(), z.toLong())
+fun Point3D(x: String, y: String, z: String) = Point3D(x.toInt(), y.toInt(), z.toInt())
+fun Point3D(match: MatchResult.Destructured) = match.let { (x, y, z) ->
+    Point3D(x.toInt(), y.toInt(), z.toInt())
+}
 
+data class PointL3D(val x: Long, val y: Long, val z: Long) {
     operator fun plus(point: PointL3D) = PointL3D(x + point.x, y + point.y, z + point.z)
     operator fun minus(point: PointL3D) = PointL3D(x - point.x, y - point.y, z - point.z)
 
     companion object
+}
+
+fun PointL3D(x: String, y: String, z: String) = PointL3D(x.toLong(), y.toLong(), z.toLong())
+fun PointL3D(match: MatchResult.Destructured) = match.let { (x, y, z) ->
+    PointL3D(x.toLong(), y.toLong(), z.toLong())
 }
 
 val Point3D.xy: Point
