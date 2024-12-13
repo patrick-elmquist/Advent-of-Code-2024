@@ -11,7 +11,7 @@ import common.util.sliceByBlank
 fun main() {
     day(n = 13) {
         part1 { input ->
-            parseMachineData(input).sumOf(::calculateToken)
+            parseMachineData(input).sumOf(::calculateTokens)
         }
         verify {
             expect result 33481L
@@ -20,7 +20,7 @@ fun main() {
 
         part2 { input ->
             val extra = PointL(10000000000000L, 10000000000000L)
-            parseMachineData(input, extra).sumOf(::calculateToken)
+            parseMachineData(input, extra).sumOf(::calculateTokens)
         }
         verify {
             expect result 92572057880885L
@@ -28,17 +28,14 @@ fun main() {
     }
 }
 
-private fun calculateToken(data: MachineData): Long {
-    val a = data.a
-    val b = data.b
+private fun calculateTokens(data: MachineData): Long {
+    val (ax, ay) = data.a
+    val (bx, by) = data.b
     val (x, y) = data.target
-    val bPresses = (a.x * y - a.y * x) / (b.y * a.x - b.x * a.y)
-    val aPresses = (x - bPresses * b.x) / a.x
-    return when {
-        x != aPresses * a.x + bPresses * b.x -> 0
-        y != aPresses * a.y + bPresses * b.y -> 0
-        else -> aPresses * 3 + bPresses
-    }
+    val b = (ax * y - ay * x) / (by * ax - bx * ay)
+    val a = (x - b * bx) / ax
+    val calculatedTarget = PointL(a * ax + b * bx, a * ay + b * by)
+    return if (calculatedTarget == data.target) a * 3 + b else 0
 }
 
 private data class MachineData(val a: PointL, val b: PointL, val target: PointL)
