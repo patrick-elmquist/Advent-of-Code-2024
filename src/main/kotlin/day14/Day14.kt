@@ -2,6 +2,7 @@ package day14
 
 import common.day
 import common.util.Point
+import common.util.neighbors
 
 // answer #1: 225943500
 // answer #2: 6377
@@ -10,6 +11,8 @@ fun main() {
     day(n = 14) {
         part1 { input ->
             val (width, height) = input.lines.first().split("x").map(String::toInt)
+            val centerX = width / 2
+            val centerY = height / 2
             val robots = input.lines.drop(1)
             val counts = mutableListOf(0, 0, 0, 0)
             parseRobots(robots)
@@ -21,12 +24,12 @@ fun main() {
                 }
                 .mapNotNull { pos ->
                     when {
-                        pos.x == width / 2 || pos.y == height / 2 -> null
-                        pos.x < width / 2 -> if (pos.y < height / 2) 0 else 1
-                        else -> if (pos.y < height / 2) 2 else 3
+                        pos.x == centerX || pos.y == centerY -> null
+                        pos.x < centerX -> if (pos.y < centerY) 0 else 1
+                        else -> if (pos.y < centerY) 2 else 3
                     }
-                }.forEach {
-                    counts[it]++
+                }.forEach { quadrant ->
+                    counts[quadrant]++
                 }
 
             counts.reduce { a, b -> a * b }
@@ -38,16 +41,28 @@ fun main() {
 
         part2 { input ->
             val (width, height) = input.lines.first().split("x").map(String::toInt)
-            var guards = parseRobots(input.lines.drop(1))
-            val bruteForcedAnswer = 6377
+            var robots = parseRobots(input.lines.drop(1))
 
-            guards = guards.map { (pos, vel) ->
-                var newX = (pos.x + bruteForcedAnswer * (vel.x + width)) % width
-                var newY = (pos.y + bruteForcedAnswer * (vel.y + height)) % height
-                Point(newX, newY) to vel
+            // note: original solution was plain brute force, watching the outputs
+
+            var counter = 1
+            while (true) {
+                robots = robots.map { (pos, vel) ->
+                    var newX = (pos.x + vel.x + width) % width
+                    var newY = (pos.y + vel.y + height) % height
+                    Point(newX, newY) to vel
+                }
+
+                val uniquePositions = robots.map { it.first }.toSet()
+                val done = robots.any { (pos, _) ->
+                    // looking for a 3x3 block
+                    pos.neighbors(diagonal = true, includeSelf = true).all { it in uniquePositions }
+                }
+
+                if (done) break else counter++
             }
 
-            val points = guards.groupingBy { (pos, _) -> pos }.eachCount()
+            val points = robots.groupingBy { (pos, _) -> pos }.eachCount()
             for (y in 0..<height) {
                 for (x in 0..<width) {
                     print(points[Point(x, y)]?.let { if (it < 9) it else '+' } ?: ' ')
@@ -55,7 +70,7 @@ fun main() {
                 println()
             }
 
-            bruteForcedAnswer
+            counter
         }
         verify {
             expect result 6377
