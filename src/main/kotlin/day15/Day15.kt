@@ -18,24 +18,24 @@ import kotlin.collections.set
 fun main() {
     day(n = 15) {
         part1 { input ->
-            val (grid, instructions) = input.lines.sliceByBlank().let { (a, b) ->
+            val (map, instructions) = input.lines.sliceByBlank().let { (a, b) ->
                 a.grid.filterValues { it != '.' }.toMutableMap() to b.joinToString("")
             }
-            var robot = grid.entries.first { it.value == '@' }.key
+            var robot = map.entries.first { it.value == '@' }.key
 
             instructions.forEach { instruction ->
                 val dir = Direction.from(instruction)
                 val next = robot.nextInDirection(dir)
-                val moveRobot = when (grid[next]) {
+                val moveRobot = when (map[next]) {
                     null -> true
                     '#' -> false
-                    'O' -> grid.checkCanMoveInDirection(robot, dir)
+                    'O' -> map.checkCanMoveInDirection(robot, dir)
                     else -> error("")
                 }
-                if (moveRobot) robot = grid.moveRobot(robot, next)
+                if (moveRobot) robot = map.moveRobot(robot, next)
             }
 
-            grid.entries.filter { it.value == 'O' }.sumOf { (key, _) -> key.x + key.y * 100 }
+            map.filterValues { it == 'O' }.keys.sumOf { (x, y) -> x + y * 100 }
         }
         verify {
             expect result 1294459
@@ -44,44 +44,34 @@ fun main() {
         }
 
         part2 { input ->
-            val sliced = input.lines.sliceByBlank()
-            val grid = sliced.first()
-                .map(::expandLine)
-                .grid
-                .filterValues { it != '.' }
-                .toMutableMap()
-
-            val instructions = sliced.last().joinToString("")
-            var robot = grid.entries.first { it.value == '@' }.key
+            val (map, instructions) = input.lines.sliceByBlank().let { (a, b) ->
+                a.map(::expandMapRow).grid.filterValues { it != '.' }.toMutableMap() to
+                        b.joinToString ("")
+            }
+            var robot = map.entries.first { it.value == '@' }.key
 
             instructions.forEach { instruction ->
                 val dir = Direction.from(instruction)
                 val next = robot.nextInDirection(dir)
-                val nextValue = grid[next]
+                val nextValue = map[next]
 
-                when (nextValue) {
-                    null -> {
-                        grid.remove(robot)
-                        robot = next
-                        grid[robot] = '@'
-                    }
-
-                    '#' -> Unit
-                    '[', ']' -> {
-                        val result = if (dir.isHorizontal) {
-                            tryMoveHorizontally(robot, dir, grid)
+                val moveRobot = when (nextValue) {
+                    null -> true
+                    '#' -> false
+                    '[', ']' ->
+                        if (dir.isHorizontal) {
+                            map.tryMoveHorizontally(robot, dir)
                         } else {
-                            tryMoveVertically(robot, grid, dir)
+                            map.tryMoveVertically(robot, dir)
                         }
-                        if (result) {
-                            robot = grid.moveRobot(from = robot, to = next)
-                        }
-                    }
 
-                    else -> error("w00t")
+                    else -> error("")
                 }
+
+                if (moveRobot) robot = map.moveRobot(robot, next)
             }
-            grid.entries.filter { it.value == '[' }.sumOf { (key, _) -> key.x + key.y * 100 }
+
+            map.filterValues { it == '[' }.keys.sumOf { (x, y) -> x + y * 100 }
         }
         verify {
             expect result 1319212
@@ -122,8 +112,74 @@ private fun MutableMap<Point, Char>.checkCanMoveInDirection(
     return true
 }
 
-private fun expandLine(line: String): String =
-    line.map { value ->
+private fun MutableMap<Point, Char>.tryMoveVertically(
+    robot: Point,
+    direction: Direction,
+): Boolean {
+    val (left, right) = getBoxPair(robot.nextInDirection(direction))
+
+    val leftResult = this.rec(left, direction)
+    if (leftResult.isEmpty()) return false
+
+    val rightResult = this.rec(right, direction)
+    if (rightResult.isEmpty()) return false
+
+    val oldPositions = leftResult + left + rightResult + right
+    val newPositions = oldPositions.map { it.nextInDirection(direction) to getValue(it) }
+    oldPositions.forEach { remove(it) }
+    putAll(newPositions)
+    return true
+}
+
+fun MutableMap<Point, Char>.rec(point: Point, direction: Direction): List<Point> {
+    val next = point.nextInDirection(direction)
+    val value = this[next]
+
+    if (value == null) return listOf(point)
+    if (value == '#') return emptyList()
+
+    val (left, right) = getBoxPair(next)
+
+    val leftResult = rec(left, direction)
+    if (leftResult.isEmpty()) return emptyList()
+
+    val rightResult = rec(right, direction)
+    if (rightResult.isEmpty()) return emptyList()
+
+    return leftResult + rightResult + listOf(left, right)
+}
+
+private fun MutableMap<Point, Char>.tryMoveHorizontally(
+    robot: Point,
+    direction: Direction,
+): Boolean {
+    val next = robot.nextInDirection(direction)
+    val oldPositions = mutableListOf<Point>(next)
+    var newNext = next.nextInDirection(direction)
+
+    while (this[newNext] == '[' || this[newNext] == ']') {
+        oldPositions += newNext
+        newNext = newNext.nextInDirection(direction)
+    }
+
+    val stopValue = this[newNext]
+    when (stopValue) {
+        '#' -> return false
+        null -> {
+            val newPositions = oldPositions.map {
+                it.nextInDirection(direction) to getValue(it)
+            }
+            oldPositions.map { remove(it) }
+            newPositions.forEach { (key, value) -> this[key] = value }
+        }
+
+        else -> error("")
+    }
+    return true
+}
+
+private fun expandMapRow(row: String): String =
+    row.map { value ->
         when (value) {
             '#' -> "##"
             'O' -> "[]"
@@ -133,125 +189,9 @@ private fun expandLine(line: String): String =
         }
     }.joinToString("")
 
-private fun tryMoveVertically(
-    robot: Point,
-    grid: MutableMap<Point, Char>,
-    direction: Direction,
-): Boolean {
-    val next = robot.nextInDirection(direction)
-    val box: Pair<Point, Point> = getBoxSides(next, direction, grid)
-    val (left, right) = box
-
-    val leftResult = rec(left, direction, grid)
-    if (leftResult.isEmpty()) return false
-
-    val rightResult = rec(right, direction, grid)
-    if (rightResult.isEmpty()) return false
-
-    val allLeft = leftResult + left
-    val movedLeftPositions =
-        allLeft.mapNotNull {
-            val v = grid[it]
-            if (v == null) {
-                null
-            } else {
-                it.nextInDirection(direction) to v
-            }
-        }
-    val allRight = rightResult + right
-    val movedRightPositions =
-        allRight.mapNotNull {
-            val v = grid[it]
-            if (v == null) {
-                null
-            } else {
-                it.nextInDirection(direction) to v
-            }
-        }
-    allLeft.forEach { grid.remove(it) }
-    allRight.forEach { grid.remove(it) }
-    movedLeftPositions.forEach { grid[it.first] = it.second }
-    movedRightPositions.forEach { grid[it.first] = it.second }
-    return true
-}
-
-fun rec(point: Point, direction: Direction, grid: MutableMap<Point, Char>): List<Point> {
-    val next = point.nextInDirection(direction)
-    val value = grid[next]
-
-    if (value == null) return listOf(point)
-    if (value == '#') return emptyList()
-
-    val (left, right) = getBoxSides(next, direction, grid)
-
-    val leftResult = rec(left, direction, grid)
-    if (leftResult.isEmpty()) {
-        return emptyList()
+private fun MutableMap<Point, Char>.getBoxPair(side: Point): Pair<Point, Point> =
+    when (this[side]) {
+        '[' -> side to side.rightNeighbour
+        ']' -> side.leftNeighbour to side
+        else -> error("")
     }
-
-    val rightResult = rec(right, direction, grid)
-    if (rightResult.isEmpty()) {
-        return emptyList()
-    }
-
-    return leftResult + rightResult + listOf(left, right)
-}
-
-private fun tryMoveHorizontally(
-    robot: Point,
-    direction: Direction,
-    grid: MutableMap<Point, Char>,
-): Boolean {
-    val next = robot.nextInDirection(direction)
-    val nextValue = grid[next]!!
-    val line = mutableListOf<Pair<Point, Char>>(next to nextValue)
-    var newNext = next.nextInDirection(direction)
-    while (grid[newNext] == '[' || grid[newNext] == ']') {
-        line += newNext to grid[newNext]!!
-        newNext = newNext.nextInDirection(direction)
-    }
-    val stopValue = grid[newNext]
-    when (stopValue) {
-        '#' -> return false
-        null -> {
-            val movedPositions =
-                line.map { it.first.nextInDirection(direction) to it.second }
-            line.map { grid.remove(it.first) }
-            movedPositions.forEach { (key, value) -> grid[key] = value }
-        }
-
-        else -> error("WAT?")
-    }
-    return true
-}
-
-private fun getBoxSides(
-    next: Point,
-    direction: Direction,
-    grid: MutableMap<Point, Char>,
-): Pair<Point, Point> = when (grid[next]) {
-    '[' -> {
-        when (direction) {
-            Direction.Right,
-            Direction.Down,
-            Direction.Up,
-                -> next to next.rightNeighbour
-
-            Direction.Left -> error("")
-        }
-    }
-
-    ']' -> {
-        when (direction) {
-            Direction.Right -> error("")
-            Direction.Left,
-            Direction.Up,
-            Direction.Down,
-                -> next.leftNeighbour to next
-        }
-    }
-
-    else -> {
-        error("")
-    }
-}
