@@ -19,17 +19,17 @@ fun main() {
     day(n = 15) {
         part1 { input ->
             val (map, instructions) = input.lines.sliceByBlank().let { (a, b) ->
-                a.grid.filterValues { it != '.' }.toMutableMap() to b.joinToString("")
+                a.grid.filterValues { it != '.' }.toMutableMap() to
+                        b.joinToString("").map(Direction::from)
             }
             var robot = map.entries.first { it.value == '@' }.key
 
-            instructions.forEach { instruction ->
-                val dir = Direction.from(instruction)
-                val next = robot.nextInDirection(dir)
+            instructions.forEach { direction ->
+                val next = robot.nextInDirection(direction)
                 val moveRobot = when (map[next]) {
                     null -> true
                     '#' -> false
-                    'O' -> map.checkCanMoveInDirection(robot, dir)
+                    'O' -> map.checkCanMoveInDirection(robot, direction)
                     else -> error("")
                 }
                 if (moveRobot) robot = map.moveRobot(robot, next)
@@ -46,31 +46,26 @@ fun main() {
         part2 { input ->
             val (map, instructions) = input.lines.sliceByBlank().let { (a, b) ->
                 a.map(::expandMapRow).grid.filterValues { it != '.' }.toMutableMap() to
-                        b.joinToString ("")
+                        b.joinToString("").map(Direction::from)
             }
             var robot = map.entries.first { it.value == '@' }.key
 
-            instructions.forEach { instruction ->
-                val dir = Direction.from(instruction)
-                val next = robot.nextInDirection(dir)
-                val nextValue = map[next]
-
-                val moveRobot = when (nextValue) {
+            instructions.forEach { direction ->
+                val next = robot.nextInDirection(direction)
+                val moveRobot = when (map[next]) {
                     null -> true
                     '#' -> false
                     '[', ']' ->
-                        if (dir.isHorizontal) {
-                            map.tryMoveHorizontally(robot, dir)
+                        if (direction.isHorizontal) {
+                            map.canMoveHorizontally(robot, direction)
                         } else {
-                            map.tryMoveVertically(robot, dir)
+                            map.canMoveVertically(robot, direction)
                         }
 
                     else -> error("")
                 }
-
                 if (moveRobot) robot = map.moveRobot(robot, next)
             }
-
             map.filterValues { it == '[' }.keys.sumOf { (x, y) -> x + y * 100 }
         }
         verify {
@@ -106,13 +101,12 @@ private fun MutableMap<Point, Char>.checkCanMoveInDirection(
             line.map { remove(it) }
             movedPositions.forEach { this[it] = 'O' }
         }
-
-        else -> error("WAT?")
+        else -> error("")
     }
     return true
 }
 
-private fun MutableMap<Point, Char>.tryMoveVertically(
+private fun MutableMap<Point, Char>.canMoveVertically(
     robot: Point,
     direction: Direction,
 ): Boolean {
@@ -149,7 +143,7 @@ fun MutableMap<Point, Char>.rec(point: Point, direction: Direction): List<Point>
     return leftResult + rightResult + listOf(left, right)
 }
 
-private fun MutableMap<Point, Char>.tryMoveHorizontally(
+private fun MutableMap<Point, Char>.canMoveHorizontally(
     robot: Point,
     direction: Direction,
 ): Boolean {
