@@ -10,7 +10,6 @@ import common.util.leftNeighbour
 import common.util.nextInDirection
 import common.util.rightNeighbour
 import common.util.sliceByBlank
-import kotlin.collections.set
 
 // answer #1: 1294459
 // answer #2: 1319212
@@ -24,12 +23,15 @@ fun main() {
             }
             var robot = map.entries.first { it.value == '@' }.key
 
+            val boxChars = setOf('O')
             instructions.forEach { direction ->
                 val next = robot.nextInDirection(direction)
                 val moveRobot = when (map[next]) {
                     null -> true
                     '#' -> false
-                    'O' -> map.checkCanMoveInDirection(robot, direction)
+                    'O' -> {
+                        map.canMoveInDirection(robot, direction, boxChars)
+                    }
                     else -> error("")
                 }
                 if (moveRobot) robot = map.moveRobot(robot, next)
@@ -50,6 +52,7 @@ fun main() {
             }
             var robot = map.entries.first { it.value == '@' }.key
 
+            val boxChars = setOf('[', ']')
             instructions.forEach { direction ->
                 val next = robot.nextInDirection(direction)
                 val moveRobot = when (map[next]) {
@@ -57,7 +60,7 @@ fun main() {
                     '#' -> false
                     '[', ']' ->
                         if (direction.isHorizontal) {
-                            map.canMoveHorizontally(robot, direction)
+                            map.canMoveInDirection(robot, direction, boxChars)
                         } else {
                             map.canMoveVertically(robot, direction)
                         }
@@ -81,25 +84,25 @@ private fun MutableMap<Point, Char>.moveRobot(from: Point, to: Point): Point {
     return to
 }
 
-private fun MutableMap<Point, Char>.checkCanMoveInDirection(
+private fun MutableMap<Point, Char>.canMoveInDirection(
     point: Point,
     direction: Direction,
+    lookFor: Set<Char> = setOf('O')
 ): Boolean {
     val next = point.nextInDirection(direction)
     val line = mutableSetOf<Point>()
     var newNext = next
-    while (this[newNext] == 'O') {
+    while (this[newNext] in lookFor) {
         line += newNext
         newNext = newNext.nextInDirection(direction)
     }
 
-    val stopValue = this[newNext]
-    when (stopValue) {
+    when (this[newNext]) {
         '#' -> return false
         null -> {
-            val movedPositions = line.map { it.nextInDirection(direction) } + newNext
+            val movedPositions = line.map { it.nextInDirection(direction) to getValue(it) }
             line.map { remove(it) }
-            movedPositions.forEach { this[it] = 'O' }
+            putAll(movedPositions)
         }
         else -> error("")
     }
@@ -125,7 +128,7 @@ private fun MutableMap<Point, Char>.canMoveVertically(
     return true
 }
 
-fun MutableMap<Point, Char>.rec(point: Point, direction: Direction): List<Point> {
+private fun MutableMap<Point, Char>.rec(point: Point, direction: Direction): List<Point> {
     val next = point.nextInDirection(direction)
     val value = this[next]
 
@@ -141,35 +144,6 @@ fun MutableMap<Point, Char>.rec(point: Point, direction: Direction): List<Point>
     if (rightResult.isEmpty()) return emptyList()
 
     return leftResult + rightResult + listOf(left, right)
-}
-
-private fun MutableMap<Point, Char>.canMoveHorizontally(
-    robot: Point,
-    direction: Direction,
-): Boolean {
-    val next = robot.nextInDirection(direction)
-    val oldPositions = mutableListOf<Point>(next)
-    var newNext = next.nextInDirection(direction)
-
-    while (this[newNext] == '[' || this[newNext] == ']') {
-        oldPositions += newNext
-        newNext = newNext.nextInDirection(direction)
-    }
-
-    val stopValue = this[newNext]
-    when (stopValue) {
-        '#' -> return false
-        null -> {
-            val newPositions = oldPositions.map {
-                it.nextInDirection(direction) to getValue(it)
-            }
-            oldPositions.map { remove(it) }
-            newPositions.forEach { (key, value) -> this[key] = value }
-        }
-
-        else -> error("")
-    }
-    return true
 }
 
 private fun expandMapRow(row: String): String =
