@@ -21,7 +21,7 @@ fun main() {
                 a.grid.filterValues { it != '.' }.toMutableMap() to
                         b.joinToString("").map(Direction::from)
             }
-            var robot = map.entries.first { it.value == '@' }.key
+            var robot = map.findRobot()
 
             val boxChars = setOf('O')
             instructions.forEach { direction ->
@@ -29,9 +29,7 @@ fun main() {
                 val moveRobot = when (map[next]) {
                     null -> true
                     '#' -> false
-                    'O' -> {
-                        map.canMoveInDirection(robot, direction, boxChars)
-                    }
+                    'O' -> map.canMoveInDirection(robot, direction, boxChars)
                     else -> error("")
                 }
                 if (moveRobot) robot = map.moveRobot(robot, next)
@@ -50,7 +48,7 @@ fun main() {
                 a.map(::expandMapRow).grid.filterValues { it != '.' }.toMutableMap() to
                         b.joinToString("").map(Direction::from)
             }
-            var robot = map.entries.first { it.value == '@' }.key
+            var robot = map.findRobot()
 
             val boxChars = setOf('[', ']')
             instructions.forEach { direction ->
@@ -64,7 +62,6 @@ fun main() {
                         } else {
                             map.canMoveVertically(robot, direction)
                         }
-
                     else -> error("")
                 }
                 if (moveRobot) robot = map.moveRobot(robot, next)
@@ -78,72 +75,73 @@ fun main() {
     }
 }
 
-private fun MutableMap<Point, Char>.moveRobot(from: Point, to: Point): Point {
-    remove(from)
-    put(to, '@')
-    return to
-}
+private fun MutableMap<Point, Char>.findRobot(): Point =
+    entries.first { it.value == '@' }.key
 
 private fun MutableMap<Point, Char>.canMoveInDirection(
     point: Point,
     direction: Direction,
-    lookFor: Set<Char> = setOf('O')
+    lookFor: Set<Char>,
 ): Boolean {
-    val next = point.nextInDirection(direction)
-    val line = mutableSetOf<Point>()
-    var newNext = next
-    while (this[newNext] in lookFor) {
-        line += newNext
-        newNext = newNext.nextInDirection(direction)
+    var newNext = point.nextInDirection(direction)
+    val movableBoxes = buildList {
+        while (get(newNext) in lookFor) {
+            add(newNext)
+            newNext = newNext.nextInDirection(direction)
+        }
     }
 
-    when (this[newNext]) {
+    when (get(newNext)) {
         '#' -> return false
-        null -> {
-            val movedPositions = line.map { it.nextInDirection(direction) to getValue(it) }
-            line.map { remove(it) }
-            putAll(movedPositions)
-        }
+        null -> moveBoxes(movableBoxes, direction)
         else -> error("")
     }
+
     return true
 }
 
 private fun MutableMap<Point, Char>.canMoveVertically(
     robot: Point,
     direction: Direction,
-): Boolean {
-    val (left, right) = getBoxPair(robot.nextInDirection(direction))
+): Boolean = findMovableBoxes(robot, direction)
+    .also { boxes -> moveBoxes(boxes, direction) }
+    .isNotEmpty()
 
-    val leftResult = this.rec(left, direction)
-    if (leftResult.isEmpty()) return false
+private fun MutableMap<Point, Char>.findMovableBoxes(
+    point: Point,
+    direction: Direction,
+): List<Point> {
+    val next = point.nextInDirection(direction)
+    when (this[next]) {
+        null -> return listOf(point)
+        '#' -> return emptyList()
+        else -> {
+            val (left, right) = getBoxPair(next)
 
-    val rightResult = this.rec(right, direction)
-    if (rightResult.isEmpty()) return false
+            val leftResult = findMovableBoxes(left, direction).takeIf { it.isNotEmpty() }
+                ?: return emptyList()
 
-    val oldPositions = leftResult + left + rightResult + right
-    val newPositions = oldPositions.map { it.nextInDirection(direction) to getValue(it) }
-    oldPositions.forEach { remove(it) }
-    putAll(newPositions)
-    return true
+            val rightResult = findMovableBoxes(right, direction).takeIf { it.isNotEmpty() }
+                ?: return emptyList()
+
+            return leftResult + left + rightResult + right
+        }
+    }
 }
 
-private fun MutableMap<Point, Char>.rec(point: Point, direction: Direction): List<Point> {
-    val next = point.nextInDirection(direction)
-    val value = this[next]
+private fun MutableMap<Point, Char>.moveRobot(from: Point, to: Point): Point {
+    remove(from)
+    put(to, '@')
+    return to
+}
 
-    if (value == null) return listOf(point)
-    if (value == '#') return emptyList()
-
-    val (left, right) = getBoxPair(next)
-
-    val leftResult = rec(left, direction)
-    if (leftResult.isEmpty()) return emptyList()
-
-    val rightResult = rec(right, direction)
-    if (rightResult.isEmpty()) return emptyList()
-
-    return leftResult + rightResult + listOf(left, right)
+private fun MutableMap<Point, Char>.moveBoxes(
+    boxesToMove: List<Point>,
+    direction: Direction,
+) {
+    val movedBoxes = boxesToMove.map { it.nextInDirection(direction) to getValue(it) }
+    boxesToMove.map { remove(it) }
+    putAll(movedBoxes)
 }
 
 private fun expandMapRow(row: String): String =
