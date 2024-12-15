@@ -3,12 +3,14 @@ package day15
 import common.day
 import common.util.Direction
 import common.util.Point
+import common.util.from
 import common.util.grid
 import common.util.isHorizontal
 import common.util.leftNeighbour
 import common.util.nextInDirection
 import common.util.rightNeighbour
 import common.util.sliceByBlank
+import kotlin.collections.set
 
 // answer #1: 1294459
 // answer #2: 1319212
@@ -16,68 +18,21 @@ import common.util.sliceByBlank
 fun main() {
     day(n = 15) {
         part1 { input ->
-            val sliced = input.lines.sliceByBlank()
-            val grid = sliced.first().grid.filterValues { it != '.' }.toMutableMap()
-            val instructions = sliced.last().joinToString("")
+            val (grid, instructions) = input.lines.sliceByBlank().let { (a, b) ->
+                a.grid.filterValues { it != '.' }.toMutableMap() to b.joinToString("")
+            }
             var robot = grid.entries.first { it.value == '@' }.key
 
-            fun tryMove(
-                point: Point,
-                direction: Direction,
-                grid: MutableMap<Point, Char>,
-            ): Boolean {
-                // gather all linked O in the line
-                // - if you reach # before . you can't do anything
-                // - as soon as the line breaks to a ., move all in dir
-
-                val next = point.nextInDirection(direction)
-                val line = mutableSetOf<Point>()
-                var newNext = next
-                while (grid[newNext] == 'O') {
-                    line += newNext
-                    newNext = newNext.nextInDirection(direction)
-                }
-
-                val stopValue = grid[newNext]
-                when (stopValue) {
-                    '#' -> return false
-                    null -> {
-                        val movedPositions = line.map { it.nextInDirection(direction) } + newNext
-                        line.map { grid.remove(it) }
-                        movedPositions.forEach { grid[it] = 'O' }
-                    }
-
-                    else -> error("WAT?")
-                }
-                return true
-            }
-
             instructions.forEach { instruction ->
-                val dir = parseDirection(instruction)
+                val dir = Direction.from(instruction)
                 val next = robot.nextInDirection(dir)
-                val nextValue = grid[next]
-
-                var res: Boolean? = null
-                when (nextValue) {
-                    null -> {
-                        grid.remove(robot)
-                        robot = next
-                        grid[robot] = '@'
-                    }
-
-                    '#' -> Unit
-                    'O' -> {
-                        val result = tryMove(robot, dir, grid)
-                        if (result) {
-                            grid.remove(robot)
-                            robot = next
-                            grid[robot] = '@'
-                        }
-                        res = result
-                    }
-
-                    else -> error("w00t")
+                val moveRobot = when (grid[next]) {
+                    null -> true
+                    '#' -> false
+                    'O' -> grid.checkCanMoveInDirection(robot, dir)
+                    else -> error("")
                 }
+                if (moveRobot) robot = grid.moveRobot(robot, next)
             }
 
             grid.entries.filter { it.value == 'O' }.sumOf { (key, _) -> key.x + key.y * 100 }
@@ -90,26 +45,20 @@ fun main() {
 
         part2 { input ->
             val sliced = input.lines.sliceByBlank()
-            val grid = sliced.first().map { line ->
-                line.map { value ->
-                    when (value) {
-                        '#' -> "##"
-                        'O' -> "[]"
-                        '.' -> ".."
-                        '@' -> "@."
-                        else -> error("")
-                    }
-                }.joinToString("")
-            }.grid.filterValues { it != '.' }.toMutableMap()
+            val grid = sliced.first()
+                .map(::expandLine)
+                .grid
+                .filterValues { it != '.' }
+                .toMutableMap()
+
             val instructions = sliced.last().joinToString("")
             var robot = grid.entries.first { it.value == '@' }.key
 
-            instructions.forEachIndexed { i, instruction ->
-                val dir = parseDirection(instruction)
+            instructions.forEach { instruction ->
+                val dir = Direction.from(instruction)
                 val next = robot.nextInDirection(dir)
                 val nextValue = grid[next]
 
-                var res: Boolean? = null
                 when (nextValue) {
                     null -> {
                         grid.remove(robot)
@@ -125,11 +74,8 @@ fun main() {
                             tryMoveVertically(robot, grid, dir)
                         }
                         if (result) {
-                            grid.remove(robot)
-                            robot = next
-                            grid[robot] = '@'
+                            robot = grid.moveRobot(from = robot, to = next)
                         }
-                        res = result
                     }
 
                     else -> error("w00t")
@@ -143,6 +89,49 @@ fun main() {
         }
     }
 }
+
+private fun MutableMap<Point, Char>.moveRobot(from: Point, to: Point): Point {
+    remove(from)
+    put(to, '@')
+    return to
+}
+
+private fun MutableMap<Point, Char>.checkCanMoveInDirection(
+    point: Point,
+    direction: Direction,
+): Boolean {
+    val next = point.nextInDirection(direction)
+    val line = mutableSetOf<Point>()
+    var newNext = next
+    while (this[newNext] == 'O') {
+        line += newNext
+        newNext = newNext.nextInDirection(direction)
+    }
+
+    val stopValue = this[newNext]
+    when (stopValue) {
+        '#' -> return false
+        null -> {
+            val movedPositions = line.map { it.nextInDirection(direction) } + newNext
+            line.map { remove(it) }
+            movedPositions.forEach { this[it] = 'O' }
+        }
+
+        else -> error("WAT?")
+    }
+    return true
+}
+
+private fun expandLine(line: String): String =
+    line.map { value ->
+        when (value) {
+            '#' -> "##"
+            'O' -> "[]"
+            '.' -> ".."
+            '@' -> "@."
+            else -> error("")
+        }
+    }.joinToString("")
 
 private fun tryMoveVertically(
     robot: Point,
@@ -251,6 +240,7 @@ private fun getBoxSides(
             Direction.Left -> error("")
         }
     }
+
     ']' -> {
         when (direction) {
             Direction.Right -> error("")
@@ -260,15 +250,8 @@ private fun getBoxSides(
                 -> next.leftNeighbour to next
         }
     }
+
     else -> {
         error("")
     }
-}
-
-private fun parseDirection(instruction: Char): Direction = when (instruction) {
-    '^' -> Direction.Up
-    'v' -> Direction.Down
-    '<' -> Direction.Left
-    '>' -> Direction.Right
-    else -> error("wth")
 }

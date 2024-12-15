@@ -1,6 +1,18 @@
 package common.util
 
-enum class Direction { Left, Up, Right, Down }
+enum class Direction {
+    Left, Up, Right, Down;
+
+    companion object
+}
+
+fun Direction.Companion.from(char: Char): Direction = when (char) {
+    '^' -> Direction.Up
+    'v' -> Direction.Down
+    '<' -> Direction.Left
+    '>' -> Direction.Right
+    else -> error("Can't create direction from '$char'")
+}
 
 val Direction.opposite
     get() = when (this) {
