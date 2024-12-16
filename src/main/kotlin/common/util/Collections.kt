@@ -56,8 +56,37 @@ fun <T> Map<Point, T>.print(
     for (y in yRange) {
         for (x in xRange) {
             val point = Point(x, y)
-            print(block(point, get(point)))
+            if (loggingEnabled) {
+                print(block(point, get(point)))
+            }
         }
-        println()
+        if (loggingEnabled) {
+            println()
+        }
+    }
+}
+
+fun <T> Map<Point, T>.printPadded(
+    width: IntRange? = null,
+    height: IntRange? = null,
+    block: (Point, T?) -> String) {
+    val xRange = width ?: minMax { it.key.x }
+    val yRange = height?: minMax { it.key.y }
+    print("    ")
+    for (x in xRange) {
+        print(" $x ".padEnd(6))
+    }
+    println()
+    for (y in yRange) {
+        print(" $y:".padStart(4))
+        for (x in xRange) {
+            val point = Point(x, y)
+            if (loggingEnabled) {
+                print(block(point, get(point)))
+            }
+        }
+        if (loggingEnabled) {
+            println()
+        }
     }
 }

@@ -5,9 +5,18 @@ import kotlin.math.abs
 /**
  * Class representing a point in 2 dimensions
  */
-data class Point(val x: Int, val y: Int) {
+data class Point(val x: Int, val y: Int): Comparable<Point> {
     operator fun plus(point: Point) = Point(x + point.x, y + point.y)
     operator fun minus(point: Point) = Point(x - point.x, y - point.y)
+
+    override fun compareTo(other: Point): Int {
+        val y = y.compareTo(other.y)
+        return if (y == 0) {
+            x.compareTo(other.x)
+        } else {
+            y
+        }
+    }
 
     companion object {
         val Zero = Point(0, 0)
