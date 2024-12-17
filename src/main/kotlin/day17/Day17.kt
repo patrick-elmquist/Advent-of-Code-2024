@@ -21,7 +21,7 @@ fun main() {
 
         part2 { input ->
             val (registers, instructions) = parseInput(input)
-            solve2(instructions, registers).min()
+            findPossibleAs(instructions, registers).min()
         }
         verify {
             expect result 107416870455451L
@@ -30,22 +30,21 @@ fun main() {
     }
 }
 
-private fun solve2(instructions: List<Long>, registers: List<Long>): List<Long> {
+private fun findPossibleAs(instructions: List<Long>, registers: List<Long>): List<Long> {
     val valid = mutableListOf(0L)
     for (length in 1..instructions.size) {
-        val instr = instructions.takeLast(length)
-        val oldValid = valid.toList()
+        val program = instructions.takeLast(length)
+        val alternatives = valid.toList()
         valid.clear()
-        for (num in oldValid) {
+        for (num in alternatives) {
             for (offset in 0L..7L) {
-                val newNum = 8L * num + offset
+                val newCandidate = 8L * num + offset
                 val output = runProgram(
-                    registers = registers.toMutableList().apply { this[0] = newNum },
-                    instructions,
+                    registers = registers.toMutableList()
+                        .apply { this[0] = newCandidate },
+                    instructions = instructions,
                 )
-                if (output == instr) {
-                    valid += newNum
-                }
+                if (output == program) valid += newCandidate
             }
         }
     }
@@ -54,44 +53,44 @@ private fun solve2(instructions: List<Long>, registers: List<Long>): List<Long> 
 
 private fun runProgram(registers: List<Long>, instructions: List<Long>): List<Long> {
     var (a, b, c) = registers
-    fun getComboOperand(value: Long): Long {
-        return when (value) {
+    fun comboOperand(value: Long): Long =
+        when (value) {
             in 0..3 -> value
             4L -> a
             5L -> b
             6L -> c
             else -> error("$value not valid")
         }
-    }
 
     val output = mutableListOf<Long>()
     var pointer = 0
     while (true) {
         if (pointer !in instructions.indices) break
-
-        val instr = instructions[pointer]
         val literalOperand = instructions[pointer + 1]
-        val comboOperand = getComboOperand(literalOperand)
-
-        when (instr) {
-            0L -> a /= 2f.pow(comboOperand.toInt()).toLong()
+        val comboOperand = comboOperand(literalOperand)
+        when (instructions[pointer]) {
+            0L -> a /= 2L.pow(comboOperand)
             1L -> b = b xor literalOperand
-            2L -> b = comboOperand % 8
+            2L -> b = comboOperand % 8L
             3L -> {
                 if (a != 0L) {
                     pointer = literalOperand.toInt()
                     continue
                 }
             }
+
             4L -> b = b xor c
             5L -> output.add(comboOperand % 8L)
-            6L -> b = a / 2f.pow(comboOperand.toInt()).toLong()
-            7L -> c = a / 2f.pow(comboOperand.toInt()).toLong()
+            6L -> b = a / 2L.pow(comboOperand)
+            7L -> c = a / 2L.pow(comboOperand)
         }
         pointer += 2
     }
     return output
 }
+
+private fun Long.pow(n: Long): Long =
+    this.toFloat().pow(n.toInt()).toLong()
 
 private fun parseInput(input: Input): Pair<List<Long>, List<Long>> {
     val sliced = input.lines.sliceByBlank()
