@@ -25,13 +25,13 @@ fun main() {
 
         part2 { input ->
             val (size, _, bytes) = parseInput(input)
-            val start = Point(0, 0)
-            val end = Point(size, size)
-
+            val (start, end) = Point(0, 0) to Point(size, size)
             var (min, max) = 0 to bytes.size
-            var pivot = max / 2
+
             while (true) {
-                if (max - min == 1) break
+                if (max - min <= 1) break
+
+                val pivot = min + (max - min) / 2
 
                 val fallenBytes = bytes.take(pivot).toSet()
                 val grid = createGrid(size) { if (it in fallenBytes) '#' else '.' }
@@ -41,8 +41,6 @@ fun main() {
                 } else {
                     min = pivot
                 }
-
-                pivot = min + (max - min) / 2
             }
 
             bytes[min].let { (x, y) -> "$x,$y" }
