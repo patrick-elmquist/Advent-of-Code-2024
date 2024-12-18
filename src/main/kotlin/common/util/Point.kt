@@ -23,6 +23,7 @@ data class Point(val x: Int, val y: Int): Comparable<Point> {
     }
 }
 
+fun Point(xy: List<Int>) = Point(xy[0].toInt(), xy[1].toInt())
 fun Point(x: String, y: String) = Point(x.toInt(), y.toInt())
 fun Point(match: MatchResult.Destructured) = match.let { (x, y) -> Point(x.toInt(), y.toInt()) }
 
