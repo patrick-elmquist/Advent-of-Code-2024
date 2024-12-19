@@ -116,3 +116,29 @@ fun Point3D.neighbors() = sequence {
     yield(copy(z = z + 1))
 }
 
+typealias Vec2i = Point
+typealias Vec2l = PointL
+typealias Vec3i = Point3D
+typealias Vec3l = PointL3D
+
+object Dir {
+    val LEFT = Point(-1, 0)
+    val TOP = Point(0, -1)
+    val RIGHT = Point(1, 0)
+    val BOTTOM = Point(0, 1)
+
+    val TOP_LEFT = Point(-1, -1)
+    val TOP_RIGHT = Point(1, -1)
+    val BOTTOM_RIGHT = Point(1, 1)
+    val BOTTOM_LEFT = Point(-1, 1)
+
+    val WEST = LEFT
+    val NORTH = TOP
+    val EAST = RIGHT
+    val SOUTH = BOTTOM
+
+    val NORTH_WEST = TOP_LEFT
+    val NORTH_EAST = TOP_RIGHT
+    val SOUTH_EAST = BOTTOM_RIGHT
+    val SOUTH_WEST = BOTTOM_LEFT
+}

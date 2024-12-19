@@ -3,7 +3,9 @@ package common.util
 /**
  * Expose the 6th component for a list
  */
-operator fun <T> List<T>.component6(): T { return this[5] }
+operator fun <T> List<T>.component6(): T {
+    return this[5]
+}
 
 /**
  * Create a ArrayDeque of the given elements or an empty if none provided
@@ -17,15 +19,18 @@ fun <T> arrayDequeOf(vararg values: T): ArrayDeque<T> =
 val Iterable<String>.grid: Map<Point, Char>
     get() = flatMapIndexed { y, row -> row.mapIndexed { x, c -> Point(x, y) to c } }.toMap()
 
-fun <T> List<String>.mapWithRegex(regex: Regex, transform: (MatchResult.Destructured) -> T): List<T> =
-    map { line -> transform(regex.find(line)!!.destructured) }
+fun <T> List<String>.mapWithRegex(
+    regex: Regex,
+    transform: (MatchResult.Destructured) -> T,
+): List<T> =
+    this@mapWithRegex.map { line -> transform(regex.find(line)!!.destructured) }
 
 fun List<String>.sliceByBlank() =
     sliceBy(excludeMatch = true) { _, line -> line.isEmpty() }
 
 fun List<String>.sliceBy(
     excludeMatch: Boolean = false,
-    breakCondition: (Int, String) -> Boolean
+    breakCondition: (Int, String) -> Boolean,
 ) = indices.asSequence()
     .filter { i -> breakCondition(i, get(i)) }
     .drop(if (excludeMatch) 0 else 1)
@@ -47,12 +52,31 @@ fun <T> Map<Point, T>.minMax(block: (Map.Entry<Point, T>) -> Int): IntRange {
     return min..max
 }
 
+fun <K, V> unsafeMapOf(vararg pairs: Pair<K, V>): UnsafeMap<K, V> =
+    UnsafeMap<K, V>().apply { putAll(pairs) }
+
+fun <K, V> defaultingMapOf(vararg pairs: Pair<K, V>, default: (K) -> V): UnsafeMap<K, V> =
+    UnsafeMap<K, V>(default = default).apply { putAll(pairs) }
+
+class UnsafeMap<K, V>(
+    val map: MutableMap<K, V> = mutableMapOf(),
+    val default: ((K) -> V)? = null,
+) : MutableMap<K, V> by map {
+    override fun get(key: K): V =
+        if (default == null) {
+            map.getValue(key)
+        } else {
+            map.getOrElse(key) { default(key) }
+        }
+}
+
 fun <T> Map<Point, T>.print(
     width: IntRange? = null,
     height: IntRange? = null,
-    block: (Point, T?) -> Any? = { _, c -> c }) {
+    block: (Point, T?) -> Any? = { _, c -> c },
+) {
     val xRange = width ?: minMax { it.key.x }
-    val yRange = height?: minMax { it.key.y }
+    val yRange = height ?: minMax { it.key.y }
     for (y in yRange) {
         for (x in xRange) {
             val point = Point(x, y)
@@ -69,9 +93,10 @@ fun <T> Map<Point, T>.print(
 fun <T> Map<Point, T>.printPadded(
     width: IntRange? = null,
     height: IntRange? = null,
-    block: (Point, T?) -> String) {
+    block: (Point, T?) -> String,
+) {
     val xRange = width ?: minMax { it.key.x }
-    val yRange = height?: minMax { it.key.y }
+    val yRange = height ?: minMax { it.key.y }
     print("    ")
     for (x in xRange) {
         print(" $x ".padEnd(6))
