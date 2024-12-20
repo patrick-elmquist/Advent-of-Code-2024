@@ -1,79 +1,54 @@
 package common.util
 
-interface Node
+import java.util.PriorityQueue
+import kotlin.sequences.forEach
 
-data class Edge(
-    val node1: Node,
-    val node2: Node,
-    val distance: Int,
-)
+fun Map<Point, Char>.findShortestPath(
+    start: Point,
+    end: Point,
+    validTiles: Set<Char> = setOf('.'),
+): Pair<Int, List<Point>> {
+    return findShortestPath(
+        start,
+        end,
+        validTiles,
+        defaultValue = null,
+    )!!
+}
 
-fun findShortestPath(edges: List<Edge>, source: Node, target: Node): ShortestPathResult {
-    val dist = mutableMapOf<Node, Int>()
-    val prev = mutableMapOf<Node, Node?>()
-    val q = findDistinctNodes(edges).toMutableSet()
+fun Map<Point, Char>.findShortestPath(
+    start: Point,
+    end: Point,
+    validTiles: Set<Char> = setOf('.'),
+    defaultValue: Pair<Int, List<Point>>?,
+): Pair<Int, List<Point>>? {
+    val distances = mutableMapOf<Point, Int>().withDefault { Int.MAX_VALUE }
+    distances[start] = 0
 
-    q.forEach { v ->
-        dist[v] = Integer.MAX_VALUE
-        prev[v] = null
-    }
-    dist[source] = 0
+    val queue = PriorityQueue<Pair<Point, List<Point>>>(compareBy { distances[it.first] })
+    queue.add(start to emptyList())
 
-    while (q.isNotEmpty()) {
-        val u = q.minByOrNull { dist[it] ?: 0 }
-        q.remove(u)
+    val visited = mutableSetOf<Point>()
+    while (queue.isNotEmpty()) {
+        val entry = queue.poll()
+        val (point, path) = entry
+        val distance = distances.getValue(point)
 
-        if (u == target) {
-            break
-        }
+        if (point == end) return distance to path + point
 
-        edges
-            .filter { it.node1 == u }
-            .forEach { edge ->
-                val v = edge.node2
-                val alt = (dist[u] ?: 0) + edge.distance
-                if (alt < (dist[u] ?: 0)) {
-                    dist[v] = alt
-                    prev[v] = u
+        if (point in visited) continue
+        visited += point
+
+        point.neighbors()
+            .filter { this[it] in validTiles }
+            .forEach { n ->
+                val distanceToN = distance + 1
+                if (distanceToN < distances.getValue(n)) {
+                    distances[n] = distanceToN
+                    queue += n to path + point
                 }
             }
     }
 
-    return ShortestPathResult(prev, dist, source, target)
-}
-
-private fun findDistinctNodes(edges: List<Edge>): Set<Node> =
-    buildSet {
-        edges.forEach {
-            add(it.node1)
-            add(it.node2)
-        }
-    }
-
-class ShortestPathResult(
-    val prev: Map<Node, Node?>,
-    val dist: Map<Node, Int>,
-    val source: Node,
-    val target: Node,
-) {
-    fun shortestPath(
-        from: Node = source,
-        to: Node = target,
-        list: List<Node> = emptyList(),
-    ): List<Node> {
-        val last = prev[to] ?: return if (from == to) {
-            list + to
-        } else {
-            emptyList()
-        }
-        return shortestPath(from, last, list) + to
-    }
-
-    fun shortestDistance(): Int? {
-        val shortest = dist[target]
-        if (shortest == Integer.MAX_VALUE) {
-            return null
-        }
-        return shortest
-    }
+    return defaultValue
 }
