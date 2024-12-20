@@ -5,12 +5,12 @@ import common.util.Point
 import common.util.grid
 import common.util.log
 import common.util.neighbors
-import common.util.print
 import common.util.printPadded
 import java.util.PriorityQueue
+import kotlin.math.min
 import kotlin.sequences.forEach
 
-// answer #1:
+// answer #1: 1452
 // answer #2:
 
 fun main() {
@@ -27,27 +27,24 @@ fun main() {
             val start = grid.entries.first { it.value == 'S' }.key
             val end = grid.entries.first { it.value == 'E' }.key
 
-            val fastestNonCheat = grid.bfs(start, end)
-//            check(fastestNonCheat == 84) { "Fastest was $fastestNonCheat" }
+            val (shortest, distances) = grid.bfs(start = end, end = start)
+            shortest.log("shortest:")
+//            distances.log("distances:")
+//            check(shortest == 84) { "Fastest was $shortest" }
 
-            val result = grid.dfs(
+            val count2 = grid.bfs2(
                 start = start,
                 end = end,
-                steps = 0,
-                limit = fastestNonCheat,
-                cheatAllowed = true,
-                visited = emptySet(),
-            ).groupingBy { it }.eachCount().log("dfs:")
+                distanceToEnd = distances,
+                limit = shortest,
+            )
 
-
-            result
-                .mapKeys { fastestNonCheat - it.key }
-                .filterKeys { it >= 100 }
-                .count()
-                .log("adjusted:")
+            count2.filter { shortest - it.key >= 100 }
+                .values
+                .sum()
         }
         verify {
-            expect result null
+            expect result 1452
             run test 1 expect 0
         }
 
@@ -64,52 +61,75 @@ fun main() {
 private val validTiles = setOf('.', 'S', 'E')
 private val cheatTiles = validTiles + '#'
 
-private fun Map<Point, Char>.dfs(
+data class State(
+    val point: Point,
+    val steps: Int,
+    val canCheat: Boolean,
+    val visited: Set<Point>,
+)
+
+private fun Map<Point, Char>.bfs2(
     start: Point,
     end: Point,
-    steps: Int,
     limit: Int,
-    visited: Set<Point>,
-    cheatAllowed: Boolean,
-): List<Int> {
-    if (steps > limit) return emptyList()
-    if (start == end) return listOf(steps)
+    distanceToEnd: Map<Point, Int>,
+): MutableMap<Int, Int> {
+    val count = mutableMapOf<Int, Int>()
 
-    val newVisited = visited + start
+    val queue = PriorityQueue<State>(compareBy { it.steps })
+    queue.add(State(start, 0, true, emptySet()))
 
-    return start.neighbors()
-        .filter { this[it] in if (cheatAllowed) cheatTiles else validTiles }
-        .toList()
-        .flatMap { point ->
-            if (point !in newVisited) {
-                val canCheat = cheatAllowed && this[point] != '#'
-                dfs(
-                    start = point,
-                    end = end,
-                    steps = steps + 1,
-                    limit = limit,
-                    visited = newVisited,
-                    cheatAllowed = canCheat
-                )
-            } else {
-                emptyList()
-            }
+    while (queue.isNotEmpty()) {
+        val (point, steps, canCheat, visited) = queue.poll()
+
+        if (steps > limit) continue
+
+        if (point == end) {
+            count.merge(steps, 1, Int::plus)
+            continue
         }
+
+        if (!canCheat && point in distanceToEnd) {
+            val total = steps + distanceToEnd.getValue(point)
+            count.merge(total, 1, Int::plus)
+            continue
+        }
+
+        if (point in visited) continue
+        val newVisited = visited + point
+
+        point.neighbors()
+            .filter { this[it] in if (canCheat) cheatTiles else validTiles }
+            .forEach { n ->
+                val distanceToN = steps + 1
+                queue += if (this[n] == '#') {
+                    State(n, distanceToN, false, newVisited)
+                } else {
+                    State(n, distanceToN, canCheat, newVisited)
+                }
+            }
+    }
+
+//    distances.printPadded { _, c -> (c ?: ' ').toString().padStart(6) }
+    return count
 }
 
-private fun Map<Point, Char>.bfs(start: Point, end: Point): Int {
+private fun Map<Point, Char>.bfs(start: Point, end: Point): Pair<Int, Map<Point, Int>> {
     val distances = mutableMapOf<Point, Int>().withDefault { Int.MAX_VALUE }
     distances[start] = 0
 
     val queue = PriorityQueue<Point>(compareBy { distances[it] })
     queue.add(start)
 
+    var min = Int.MAX_VALUE
     val visited = mutableSetOf<Point>()
     while (queue.isNotEmpty()) {
         val point = queue.poll()
         val distance = distances.getValue(point)
 
-        if (point == end) return distance
+        if (point == end) {
+            min = min(min, distance)
+        }
 
         if (point in visited) continue
         visited += point
@@ -125,6 +145,6 @@ private fun Map<Point, Char>.bfs(start: Point, end: Point): Int {
             }
     }
 
-    distances.printPadded { _, c -> (c ?: ' ').toString().padStart(6) }
-    error("did not find end")
+//    distances.printPadded { _, c -> (c ?: ' ').toString().padStart(6) }
+    return min to distances.toMap()
 }
