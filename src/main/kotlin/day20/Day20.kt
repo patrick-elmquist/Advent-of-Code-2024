@@ -1,45 +1,37 @@
 package day20
 
+import common.Input
 import common.day
 import common.util.Point
+import common.util.distance
 import common.util.grid
-import common.util.log
 import common.util.neighbors
-import common.util.printPadded
 import java.util.PriorityQueue
 import kotlin.math.min
 import kotlin.sequences.forEach
 
 // answer #1: 1452
-// answer #2:
+// answer #2: 999556
 
+private val validTiles = setOf('.', 'S', 'E')
+private val cheatTiles = validTiles + '#'
 fun main() {
     day(n = 20) {
         part1 { input ->
-            val width = input.lines.first().length
-            val height = input.lines.size
-            val grid = input.lines.grid
-                .filter { (key, _) -> key.x in 1..width - 2 }
-                .filter { (key, _) -> key.y in 1..height - 2 }
-
-//            grid.print()
+            val grid = createGrid(input)
 
             val start = grid.entries.first { it.value == 'S' }.key
             val end = grid.entries.first { it.value == 'E' }.key
 
             val (shortest, distances) = grid.bfs(start = end, end = start)
-            shortest.log("shortest:")
-//            distances.log("distances:")
-//            check(shortest == 84) { "Fastest was $shortest" }
-
-            val count2 = grid.bfs2(
+            val count = grid.bfs2(
                 start = start,
                 end = end,
                 distanceToEnd = distances,
                 limit = shortest,
             )
 
-            count2.filter { shortest - it.key >= 100 }
+            count.filter { shortest - it.key >= 100 }
                 .values
                 .sum()
         }
@@ -49,17 +41,55 @@ fun main() {
         }
 
         part2 { input ->
+            val grid = createGrid(input)
+            val threshold = if (input.lines.first().length > 20) 100 else 50
+            val start = grid.entries.first { it.value == 'S' }.key
+            val end = grid.entries.first { it.value == 'E' }.key
 
+            val diamond = buildList {
+                for (y in -20..20) {
+                    for (x in -20..20) {
+                        val p = Point(x, y)
+                        if (p != Point.Zero && p.distance(Point.Zero) <= 20) {
+                            add(p)
+                        }
+                    }
+                }
+            }
+
+            val (shortest, distances) = grid.bfs(start = end, end = start)
+
+            var counter = mutableMapOf<Int, Int>()
+            distances.toList().sortedByDescending { it.second }
+                .forEachIndexed { i, (point, _) ->
+                    diamond.map { it + point }
+                        .filter { grid[it] in validTiles }
+                        .forEach { after ->
+                            val distanceToEnd = distances.getValue(after)
+                            val total = i + distanceToEnd + after.distance(point)
+                            if (shortest - total >= threshold) {
+                                counter.merge(shortest - total, 1, Int::plus)
+                            }
+                        }
+                }
+            counter.values.sum()
         }
         verify {
-            expect result null
-            run test 1 expect Unit
+            expect result 999556
+            run test 1 expect 285
         }
     }
 }
 
-private val validTiles = setOf('.', 'S', 'E')
-private val cheatTiles = validTiles + '#'
+private fun createGrid(input: Input): Map<Point, Char> {
+    val width = input.lines.first().length
+    val height = input.lines.size
+    val grid = input.lines.grid
+        .filter { (key, _) -> key.x in 1..width - 2 }
+        .filter { (key, _) -> key.y in 1..height - 2 }
+    return grid
+}
+
 
 data class State(
     val point: Point,
@@ -110,7 +140,6 @@ private fun Map<Point, Char>.bfs2(
             }
     }
 
-//    distances.printPadded { _, c -> (c ?: ' ').toString().padStart(6) }
     return count
 }
 
