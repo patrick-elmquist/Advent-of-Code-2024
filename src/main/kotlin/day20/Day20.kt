@@ -1,6 +1,5 @@
 package day20
 
-import common.Input
 import common.day
 import common.util.Point
 import common.util.distance
@@ -13,25 +12,11 @@ import kotlin.sequences.forEach
 // answer #1: 1452
 // answer #2: 999556
 
-private val validTiles = setOf('.', 'S', 'E')
-private val cheatTiles = validTiles + '#'
 fun main() {
     day(n = 20) {
         part1 { input ->
-            val grid = createGrid(input)
-
-            val start = grid.entries.first { it.value == 'S' }.key
-            val end = grid.entries.first { it.value == 'E' }.key
-
-            val (shortest, distances) = grid.bfs(start = end, end = start)
-            val count = grid.bfs2(
-                start = start,
-                end = end,
-                distanceToEnd = distances,
-                limit = shortest,
-            )
-
-            count.filter { shortest - it.key >= 100 }
+            countCheats(grid = input.lines.grid, maxCheatsAllowed = 2)
+                .filterKeys { it >= 100 }
                 .values
                 .sum()
         }
@@ -41,38 +26,11 @@ fun main() {
         }
 
         part2 { input ->
-            val grid = createGrid(input)
             val threshold = if (input.lines.first().length > 20) 100 else 50
-            val start = grid.entries.first { it.value == 'S' }.key
-            val end = grid.entries.first { it.value == 'E' }.key
-
-            val diamond = buildList {
-                for (y in -20..20) {
-                    for (x in -20..20) {
-                        val p = Point(x, y)
-                        if (p != Point.Zero && p.distance(Point.Zero) <= 20) {
-                            add(p)
-                        }
-                    }
-                }
-            }
-
-            val (shortest, distances) = grid.bfs(start = end, end = start)
-
-            var counter = mutableMapOf<Int, Int>()
-            distances.toList().sortedByDescending { it.second }
-                .forEachIndexed { i, (point, _) ->
-                    diamond.map { it + point }
-                        .filter { grid[it] in validTiles }
-                        .forEach { after ->
-                            val distanceToEnd = distances.getValue(after)
-                            val total = i + distanceToEnd + after.distance(point)
-                            if (shortest - total >= threshold) {
-                                counter.merge(shortest - total, 1, Int::plus)
-                            }
-                        }
-                }
-            counter.values.sum()
+            countCheats(grid = input.lines.grid, maxCheatsAllowed = 20)
+                .filterKeys { it >= threshold }
+                .values
+                .sum()
         }
         verify {
             expect result 999556
@@ -81,69 +39,32 @@ fun main() {
     }
 }
 
-private fun createGrid(input: Input): Map<Point, Char> {
-    val width = input.lines.first().length
-    val height = input.lines.size
-    val grid = input.lines.grid
-        .filter { (key, _) -> key.x in 1..width - 2 }
-        .filter { (key, _) -> key.y in 1..height - 2 }
-    return grid
-}
-
-
-data class State(
-    val point: Point,
-    val steps: Int,
-    val canCheat: Boolean,
-    val visited: Set<Point>,
-)
-
-private fun Map<Point, Char>.bfs2(
-    start: Point,
-    end: Point,
-    limit: Int,
-    distanceToEnd: Map<Point, Int>,
-): MutableMap<Int, Int> {
-    val count = mutableMapOf<Int, Int>()
-
-    val queue = PriorityQueue<State>(compareBy { it.steps })
-    queue.add(State(start, 0, true, emptySet()))
-
-    while (queue.isNotEmpty()) {
-        val (point, steps, canCheat, visited) = queue.poll()
-
-        if (steps > limit) continue
-
-        if (point == end) {
-            count.merge(steps, 1, Int::plus)
-            continue
-        }
-
-        if (!canCheat && point in distanceToEnd) {
-            val total = steps + distanceToEnd.getValue(point)
-            count.merge(total, 1, Int::plus)
-            continue
-        }
-
-        if (point in visited) continue
-        val newVisited = visited + point
-
-        point.neighbors()
-            .filter { this[it] in if (canCheat) cheatTiles else validTiles }
-            .forEach { n ->
-                val distanceToN = steps + 1
-                queue += if (this[n] == '#') {
-                    State(n, distanceToN, false, newVisited)
-                } else {
-                    State(n, distanceToN, canCheat, newVisited)
-                }
+private val validTiles = setOf('.', 'S', 'E')
+private fun countCheats(
+    grid: Map<Point, Char>,
+    maxCheatsAllowed: Int,
+): Map<Int, Int> {
+    val distances = grid.calculateDistanceFromEndToStart()
+    val shortest = distances.values.max()
+    val searchArea = createSearchArea(radius = maxCheatsAllowed)
+    return buildMap {
+        distances.entries
+            .sortedByDescending { (_, steps) -> steps }
+            .forEachIndexed { steps, (point, _) ->
+                searchArea.map { it + point }
+                    .filter { grid[it] in validTiles }
+                    .forEach { destination ->
+                        val distanceToEnd = distances.getValue(destination)
+                        val total = steps + distanceToEnd + destination.distance(point)
+                        merge(shortest - total, 1, Int::plus)
+                    }
             }
     }
-
-    return count
 }
 
-private fun Map<Point, Char>.bfs(start: Point, end: Point): Pair<Int, Map<Point, Int>> {
+private fun Map<Point, Char>.calculateDistanceFromEndToStart(): Map<Point, Int> {
+    val start = entries.first { it.value == 'S' }.key
+    val end = entries.first { it.value == 'E' }.key
     val distances = mutableMapOf<Point, Int>().withDefault { Int.MAX_VALUE }
     distances[start] = 0
 
@@ -174,6 +95,16 @@ private fun Map<Point, Char>.bfs(start: Point, end: Point): Pair<Int, Map<Point,
             }
     }
 
-//    distances.printPadded { _, c -> (c ?: ' ').toString().padStart(6) }
-    return min to distances.toMap()
+    return distances.toMap()
+}
+
+private fun createSearchArea(radius: Int): List<Point> = buildList {
+    for (y in -radius..radius) {
+        for (x in -radius..radius) {
+            val p = Point(x, y)
+            if (p != Point.Zero && p.distance(Point.Zero) <= radius) {
+                add(p)
+            }
+        }
+    }
 }
