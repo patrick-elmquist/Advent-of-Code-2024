@@ -6,8 +6,6 @@ import common.util.distance
 import common.util.grid
 import common.util.neighbors
 import java.util.PriorityQueue
-import kotlin.math.min
-import kotlin.sequences.forEach
 
 // answer #1: 1452
 // answer #2: 999556
@@ -44,7 +42,7 @@ private fun countCheats(
     grid: Map<Point, Char>,
     maxCheatsAllowed: Int,
 ): Map<Int, Int> {
-    val distances = grid.calculateDistanceFromEndToStart()
+    val distances = grid.calculateDistances()
     val shortest = distances.values.max()
     val searchArea = createSearchArea(radius = maxCheatsAllowed)
     return buildMap {
@@ -62,37 +60,28 @@ private fun countCheats(
     }
 }
 
-private fun Map<Point, Char>.calculateDistanceFromEndToStart(): Map<Point, Int> {
+private fun Map<Point, Char>.calculateDistances(): Map<Point, Int> {
     val start = entries.first { it.value == 'S' }.key
     val end = entries.first { it.value == 'E' }.key
-    val distances = mutableMapOf<Point, Int>().withDefault { Int.MAX_VALUE }
-    distances[start] = 0
 
+    val distances = mutableMapOf<Point, Int>(end to 0)
     val queue = PriorityQueue<Point>(compareBy { distances[it] })
-    queue.add(start)
+    queue.add(end)
 
-    var min = Int.MAX_VALUE
-    val visited = mutableSetOf<Point>()
+    var previous: Point? = null
     while (queue.isNotEmpty()) {
         val point = queue.poll()
-        val distance = distances.getValue(point)
 
-        if (point == end) {
-            min = min(min, distance)
-        }
-
-        if (point in visited) continue
-        visited += point
+        if (point == start) break
 
         point.neighbors()
-            .filter { this[it] in validTiles }
-            .forEach { n ->
-                val distanceToN = distance + 1
-                if (distanceToN < distances.getValue(n)) {
-                    distances[n] = distanceToN
-                    queue += n
-                }
+            .first { this[it] in validTiles && it != previous }
+            .let { next ->
+                distances[next] = distances.getValue(point) + 1
+                queue += next
             }
+
+        previous = point
     }
 
     return distances.toMap()
