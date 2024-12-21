@@ -2,6 +2,7 @@ package day21
 
 import common.day
 import common.util.Point
+import common.util.log
 import common.util.neighbors
 import java.util.PriorityQueue
 
@@ -34,32 +35,15 @@ private val pointToDirMap = dirToPointMap.map { (key, value) -> value to key }.t
 fun main() {
     day(n = 21) {
         part1 { input ->
-            val outputs = input.lines.map { code ->
-                val keypadRec = rec(
-                    code = code,
-                    toCharMap = pointToKeyMap,
-                    toPointMap = keyToPointMap,
-                )
-                val firstRec = keypadRec.flatMap {
-                    rec(
-                        code = it,
-                        toCharMap = pointToDirMap,
-                        toPointMap = dirToPointMap,
-                    )
-                }
-                val secondRec = firstRec.flatMap {
-                    rec(
-                        code = it,
-                        toCharMap = pointToDirMap,
-                        toPointMap = dirToPointMap,
-                    )
-                }
-
-                val min = secondRec.minOf { it.length }
-                code.dropLast(1).toInt() * min
+            input.lines.sumOf { code ->
+                code.dropLast(1).toInt() * rec(code, Type.Keypad)
+                    .flatMap { rec(it, Type.Direction) }
+                    .groupBy { it.length }
+                    .minBy { it.key }
+                    .value
+                    .flatMap { rec(it, Type.Direction) }
+                    .minOf { it.length }
             }
-
-            outputs.sum()
         }
         verify {
             expect result 184716
@@ -76,13 +60,16 @@ fun main() {
     }
 }
 
+private enum class Type { Keypad, Direction }
+
 private fun rec(
     code: String,
-    toPointMap: Map<Char, Point>,
-    toCharMap: Map<Point, Char>,
-    position: Point = toPointMap.getValue('A'),
+    type: Type,
     path: String = "",
+    position: Point = getMaps(type).first.getValue('A'),
 ): List<String> {
+    val (toPointMap, toCharMap) = getMaps(type)
+
     if (code.isEmpty()) return listOf(path)
 
     val c = code[0]
@@ -92,41 +79,30 @@ private fun rec(
         map = toCharMap,
         start = position,
         end = end,
-    ).map { p ->
-        buildString {
-            append(path)
-            p.windowed(2, 1, false).forEach { (a, b) ->
-                val instruction = when {
-                    b.x < a.x -> '<'
-                    b.x > a.x -> '>'
-                    b.y < a.y -> '^'
-                    b.y > a.y -> 'v'
-                    else -> error("a:$a b:$b")
-                }
-//                "checking a:$a b:$b out:$instruction".log()
-                append(instruction)
-            }
-
-            append('A')
+    )
+        .map { path + it }
+        .flatMap {
+            rec(
+                code = code.drop(1),
+                type = type,
+                position = end,
+                path = it,
+            )
         }
-    }.flatMap {
-        rec(
-            code = code.drop(1),
-            position = end,
-            path = it,
-            toCharMap = toCharMap,
-            toPointMap = toPointMap,
-        )
-    }
 }
 
-private val keyCache = mutableMapOf<Pair<Point, Point>, List<List<Point>>>()
-private val dirCache = mutableMapOf<Pair<Point, Point>, List<List<Point>>>()
+private fun getMaps(type: Type): Pair<Map<Char, Point>, Map<Point, Char>> = when (type) {
+    Type.Keypad -> keyToPointMap to pointToKeyMap
+    Type.Direction -> dirToPointMap to pointToDirMap
+}
+
+private val keyCache = mutableMapOf<Pair<Point, Point>, List<String>>()
+private val dirCache = mutableMapOf<Pair<Point, Point>, List<String>>()
 private fun findAllShortestPath(
     map: Map<Point, Char>,
     start: Point,
     end: Point,
-): List<List<Point>> {
+): List<String> {
     val cache = if (map === pointToKeyMap) {
         keyCache
     } else if (map === pointToDirMap) {
@@ -169,6 +145,20 @@ private fun findAllShortestPath(
                     }
                 }
         }
-        return@getOrPut paths
+        return@getOrPut paths.map { p ->
+            buildString {
+                p.windowed(2, 1, false).forEach { (a, b) ->
+                    val instruction = when {
+                        b.x < a.x -> '<'
+                        b.x > a.x -> '>'
+                        b.y < a.y -> '^'
+                        b.y > a.y -> 'v'
+                        else -> error("a:$a b:$b")
+                    }
+                    append(instruction)
+                }
+                append('A')
+            }
+        }
     }
 }
