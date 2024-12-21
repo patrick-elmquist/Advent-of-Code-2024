@@ -14,6 +14,13 @@ fun Direction.Companion.from(char: Char): Direction = when (char) {
     else -> error("Can't create direction from '$char'")
 }
 
+fun Direction.toPoint() = when(this) {
+    Direction.Left -> Point(-1, 0)
+    Direction.Up -> Point(0, -1)
+    Direction.Right -> Point(1, 0)
+    Direction.Down -> Point(0, 1)
+}
+
 val Direction.opposite
     get() = when (this) {
         Direction.Left -> Direction.Right

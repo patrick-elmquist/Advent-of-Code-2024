@@ -19,6 +19,17 @@ fun <T> arrayDequeOf(vararg values: T): ArrayDeque<T> =
 val Iterable<String>.grid: Map<Point, Char>
     get() = flatMapIndexed { y, row -> row.mapIndexed { x, c -> Point(x, y) to c } }.toMap()
 
+fun Map<Point, Char>.ignoreWhitespace() = filterValues { it != ' ' }
+
+fun gridOf(vararg strings: String, trimWhiteSpace: Boolean = false): Map<Point, Char> {
+    val grid = strings.toList().grid
+    return if (trimWhiteSpace) {
+        grid.filterValues { it != ' ' }
+    } else {
+        grid
+    }
+}
+
 fun <T> List<String>.mapWithRegex(
     regex: Regex,
     transform: (MatchResult.Destructured) -> T,
@@ -115,3 +126,10 @@ fun <T> Map<Point, T>.printPadded(
         }
     }
 }
+
+fun <T> List<T>.permutations(): List<List<T>> {
+    return if (this.size == 1) listOf(this)
+    else this.flatMap { i -> (this - i).permutations().map { listOf(i) + it } }
+}
+
+fun String.permutations() = this.toList().permutations().map { it.joinToString("") }
