@@ -2,6 +2,8 @@ package common.util
 
 import kotlin.math.abs
 
+typealias Vec2i = Point
+
 /**
  * Class representing a point in 2 dimensions
  */
@@ -20,62 +22,35 @@ data class Point(val x: Int, val y: Int): Comparable<Point> {
 
     companion object {
         val Zero = Point(0, 0)
+        val Origin = Zero
     }
 }
 
-fun Point(xy: List<Int>) = Point(xy[0].toInt(), xy[1].toInt())
-fun Point(x: String, y: String) = Point(x.toInt(), y.toInt())
-fun Point(match: MatchResult.Destructured) = match.let { (x, y) -> Point(x.toInt(), y.toInt()) }
-
-
-data class PointL(val x: Long, val y: Long) {
-    operator fun plus(point: PointL) = PointL(x + point.x, y + point.y)
-    operator fun minus(point: PointL) = PointL(x - point.x, y - point.y)
-
-    companion object
+fun Point(xy: List<Int>): Point {
+    require(xy.size == 2)
+    return Point(xy[0], xy[1])
 }
 
-fun PointL(x: String, y: String) = PointL(x.toLong(), y.toLong())
-fun PointL(match: MatchResult.Destructured) = match.let { (x, y) -> PointL(x.toLong(), y.toLong()) }
+fun Point(x: String, y: String) =
+    Point(x.toInt(), y.toInt())
 
-data class Point3D(val x: Int, val y: Int, val z: Int) {
-    operator fun plus(point: Point) = Point(x + point.x, y + point.y)
-    operator fun minus(point: Point) = Point(x - point.x, y - point.y)
+fun Point(match: MatchResult.Destructured) =
+    match.let { (x, y) -> Point(x.toInt(), y.toInt()) }
 
-    companion object
-}
-
-fun Point3D(x: String, y: String, z: String) = Point3D(x.toInt(), y.toInt(), z.toInt())
-fun Point3D(match: MatchResult.Destructured) = match.let { (x, y, z) ->
-    Point3D(x.toInt(), y.toInt(), z.toInt())
-}
-
-data class PointL3D(val x: Long, val y: Long, val z: Long) {
-    operator fun plus(point: PointL3D) = PointL3D(x + point.x, y + point.y, z + point.z)
-    operator fun minus(point: PointL3D) = PointL3D(x - point.x, y - point.y, z - point.z)
-
-    companion object
-}
-
-fun PointL3D(x: String, y: String, z: String) = PointL3D(x.toLong(), y.toLong(), z.toLong())
-fun PointL3D(match: MatchResult.Destructured) = match.let { (x, y, z) ->
-    PointL3D(x.toLong(), y.toLong(), z.toLong())
-}
-
-val Point3D.xy: Point
-    get() = Point(x = x, y = y)
+operator fun Point.plus(dir: Direction) = this + dir.point
+operator fun Point.minus(dir: Direction) = this - dir.point
 
 val Point.leftNeighbour: Point
-    get() = copy(x = x - 1)
+    get() = this + Direction.Left
 
 val Point.rightNeighbour: Point
-    get() = copy(x = x + 1)
+    get() = this + Direction.Right
 
 val Point.aboveNeighbour: Point
-    get() = copy(y = y - 1)
+    get() = this + Direction.Up
 
 val Point.belowNeighbour: Point
-    get() = copy(y = y + 1)
+    get() = this + Direction.Down
 
 fun Point.distance(other: Point): Int =
     abs(other.x - x) + abs(other.y - y)
@@ -103,42 +78,4 @@ fun Point.neighbors(
     if (diagonal) yield(Point(x - 1, y + 1))
     yield(copy(y = y + 1))
     if (diagonal) yield(Point(x + 1, y + 1))
-}
-
-fun Point3D.neighbors() = sequence {
-    yield(copy(y = y - 1))
-    yield(copy(y = y + 1))
-
-    yield(copy(x = x - 1))
-    yield(copy(x = x + 1))
-
-    yield(copy(z = z - 1))
-    yield(copy(z = z + 1))
-}
-
-typealias Vec2i = Point
-typealias Vec2l = PointL
-typealias Vec3i = Point3D
-typealias Vec3l = PointL3D
-
-object Dir {
-    val LEFT = Point(-1, 0)
-    val TOP = Point(0, -1)
-    val RIGHT = Point(1, 0)
-    val BOTTOM = Point(0, 1)
-
-    val TOP_LEFT = Point(-1, -1)
-    val TOP_RIGHT = Point(1, -1)
-    val BOTTOM_RIGHT = Point(1, 1)
-    val BOTTOM_LEFT = Point(-1, 1)
-
-    val WEST = LEFT
-    val NORTH = TOP
-    val EAST = RIGHT
-    val SOUTH = BOTTOM
-
-    val NORTH_WEST = TOP_LEFT
-    val NORTH_EAST = TOP_RIGHT
-    val SOUTH_EAST = BOTTOM_RIGHT
-    val SOUTH_WEST = BOTTOM_LEFT
 }

@@ -3,7 +3,7 @@ package day15
 import common.day
 import common.util.Direction
 import common.util.Point
-import common.util.from
+import common.util.of
 import common.util.grid
 import common.util.isHorizontal
 import common.util.leftNeighbour
@@ -19,7 +19,7 @@ fun main() {
         part1 { input ->
             val (map, instructions) = input.lines.sliceByBlank().let { (a, b) ->
                 a.grid.filterValues { it != '.' }.toMutableMap() to
-                        b.joinToString("").map(Direction::from)
+                        b.joinToString("").map(Direction::of)
             }
             var robot = map.findRobot()
 
@@ -46,7 +46,7 @@ fun main() {
         part2 { input ->
             val (map, instructions) = input.lines.sliceByBlank().let { (a, b) ->
                 a.map(::expandMapRow).grid.filterValues { it != '.' }.toMutableMap() to
-                        b.joinToString("").map(Direction::from)
+                        b.joinToString("").map(Direction::of)
             }
             var robot = map.findRobot()
 

@@ -1,12 +1,18 @@
 package common.util
 
-enum class Direction {
-    Left, Up, Right, Down;
+enum class Direction(
+    val point: Point,
+    val pointL: PointL,
+) {
+    Left(Point(-1, 0), PointL(-1L, 0L)),
+    Up(Point(0, -1), PointL(0L, -1L)),
+    Right(Point(1, 0), PointL(1L, 0L)),
+    Down(Point(0, 1), PointL(0L, 1L));
 
     companion object
 }
 
-fun Direction.Companion.from(char: Char): Direction = when (char) {
+fun Direction.Companion.of(char: Char): Direction = when (char) {
     '^' -> Direction.Up
     'v' -> Direction.Down
     '<' -> Direction.Left
@@ -14,12 +20,11 @@ fun Direction.Companion.from(char: Char): Direction = when (char) {
     else -> error("Can't create direction from '$char'")
 }
 
-fun Direction.toPoint() = when(this) {
-    Direction.Left -> Point(-1, 0)
-    Direction.Up -> Point(0, -1)
-    Direction.Right -> Point(1, 0)
-    Direction.Down -> Point(0, 1)
-}
+val Direction.isHorizontal
+    get() = this == Direction.Left || this == Direction.Right
+
+val Direction.isVertical
+    get() = this == Direction.Up || this == Direction.Down
 
 val Direction.opposite
     get() = when (this) {
@@ -28,12 +33,6 @@ val Direction.opposite
         Direction.Right -> Direction.Left
         Direction.Down -> Direction.Up
     }
-
-val Direction.isHorizontal
-    get() = this == Direction.Left || this == Direction.Right
-
-val Direction.isVertical
-    get() = this == Direction.Up || this == Direction.Down
 
 val Direction.nextCW: Direction
     get() = when (this) {
