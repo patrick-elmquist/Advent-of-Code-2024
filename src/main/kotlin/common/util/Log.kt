@@ -2,6 +2,8 @@
 
 package common.util
 
+import io.ktor.client.plugins.logging.Logger
+
 var loggingEnabled = true
 
 /**
@@ -12,6 +14,8 @@ var loggingEnabled = true
 inline operator fun String.not() {
     if (loggingEnabled) println(this)
 }
+
+inline fun <T> T.out(): T = log()
 
 inline fun <T> T.log(): T {
     if (loggingEnabled) println(this)
