@@ -21,6 +21,8 @@ val Iterable<String>.grid: Map<Point, Char>
 
 fun Map<Point, Char>.ignoreWhitespace() = filterValues { it != ' ' }
 
+fun Map<Point, Char>.flipKeyValue() = map { it.value to it.key }.toMap()
+
 fun gridOf(vararg strings: String, trimWhiteSpace: Boolean = false): Map<Point, Char> {
     val grid = strings.toList().grid
     return if (trimWhiteSpace) {
