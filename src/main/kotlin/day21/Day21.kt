@@ -2,88 +2,67 @@ package day21
 
 import common.day
 import common.util.Point
-import common.util.log
 import common.util.neighbors
-import common.util.out
-import common.util.print
 import java.util.PriorityQueue
-import kotlin.collections.plus
-import kotlin.sequences.forEach
 
-// answer #1:
+// answer #1: 184716
 // answer #2:
 
-// Input: 029A
-//  Lvl1: <A^A^^>AvvvA
-//  Lvl2: v<<A>>^A<A>A<AAv>A^Av<AAA>^A
 private val keyToPointMap = mapOf(
-    '7' to Point(0,0),
-    '8' to Point(1,0),
-    '9' to Point(2,0),
-    '4' to Point(0,1),
-    '5' to Point(1,1),
-    '6' to Point(2,1),
-    '1' to Point(0,2),
-    '2' to Point(1,2),
-    '3' to Point(2,2),
-    '0' to Point(1,3),
-    'A' to Point(2,3),
+    '7' to Point(0, 0),
+    '8' to Point(1, 0),
+    '9' to Point(2, 0),
+    '4' to Point(0, 1),
+    '5' to Point(1, 1),
+    '6' to Point(2, 1),
+    '1' to Point(0, 2),
+    '2' to Point(1, 2),
+    '3' to Point(2, 2),
+    '0' to Point(1, 3),
+    'A' to Point(2, 3),
 )
 private val pointToKeyMap = keyToPointMap.map { (key, value) -> value to key }.toMap()
 private val dirToPointMap = mapOf(
-    '^' to Point(1,0),
-    'A' to Point(2,0),
-    '<' to Point(0,1),
-    'v' to Point(1,1),
-    '>' to Point(2,1),
+    '^' to Point(1, 0),
+    'A' to Point(2, 0),
+    '<' to Point(0, 1),
+    'v' to Point(1, 1),
+    '>' to Point(2, 1),
 )
 private val pointToDirMap = dirToPointMap.map { (key, value) -> value to key }.toMap()
 
 fun main() {
     day(n = 21) {
         part1 { input ->
-
-            val paths = pointToKeyMap.findAllShortestPath(
-                start = keyToPointMap.getValue('2'),
-                end = keyToPointMap.getValue('9'),
-            ).log("all paths:")
-
-
-            paths.map {
-                countTurns(it)
-            }.log("turns:")
-
-
-            paths.size.log()
-
-            pointToKeyMap.print { p, c -> c ?: ' '}
-            val code = "029A"
-            val keypad = resolveKeypad(code)
-            val first = resolveDirection(keypad)
-            val second = resolveDirection(first)
-
-            keypad.log("keypad: ")
-            first.log("first ${first.length}: ")
-            second.log("second ${second.length}: ")
-            pointToDirMap.print { _, c -> c ?: ' ' }
-
             val outputs = input.lines.map { code ->
-                val keypad = resolveKeypad(code)
-                val first = resolveDirection(keypad)
-                val second = resolveDirection(first)
-                "code:$code lens ${keypad.length} ${first.length} ${second.length}".log()
-                code.dropLast(1).toInt() * second.length
-            }.log("sums:")
+                val keypadRec = rec(
+                    code = code,
+                    toCharMap = pointToKeyMap,
+                    toPointMap = keyToPointMap,
+                )
+                val firstRec = keypadRec.flatMap {
+                    rec(
+                        code = it,
+                        toCharMap = pointToDirMap,
+                        toPointMap = dirToPointMap,
+                    )
+                }
+                val secondRec = firstRec.flatMap {
+                    rec(
+                        code = it,
+                        toCharMap = pointToDirMap,
+                        toPointMap = dirToPointMap,
+                    )
+                }
 
-            val expected = listOf(1972, 58800, 12172, 29184, 24256)
-            check(outputs == expected) {
-                "\nexpected:$expected\n    was: $outputs"
+                val min = secondRec.minOf { it.length }
+                code.dropLast(1).toInt() * min
             }
 
-
+            outputs.sum()
         }
         verify {
-            expect result null
+            expect result 184716
             run test 1 expect 126384
         }
 
@@ -97,19 +76,26 @@ fun main() {
     }
 }
 
-private fun resolveDirection(movements: String): String = buildString {
-    var position = dirToPointMap.getValue('A').log("position")
-    movements.forEach { c ->
-        val end = dirToPointMap.getValue(c).log("c:$c end:")
+private fun rec(
+    code: String,
+    toPointMap: Map<Char, Point>,
+    toCharMap: Map<Point, Char>,
+    position: Point = toPointMap.getValue('A'),
+    path: String = "",
+): List<String> {
+    if (code.isEmpty()) return listOf(path)
 
-        if (position != end) {
-            val path = pointToKeyMap.findAllShortestPath(
-                start = position,
-                end = end,
-            ).minBy { countTurns(it) }
+    val c = code[0]
+    val end = toPointMap.getValue(c)
 
-            path.log("path (${path.size}):")
-            path.windowed(2, 1, false).forEach { (a, b) ->
+    return findAllShortestPath(
+        map = toCharMap,
+        start = position,
+        end = end,
+    ).map { p ->
+        buildString {
+            append(path)
+            p.windowed(2, 1, false).forEach { (a, b) ->
                 val instruction = when {
                     b.x < a.x -> '<'
                     b.x > a.x -> '>'
@@ -117,139 +103,72 @@ private fun resolveDirection(movements: String): String = buildString {
                     b.y > a.y -> 'v'
                     else -> error("a:$a b:$b")
                 }
-                "checking a:$a b:$b out:$instruction".log()
+//                "checking a:$a b:$b out:$instruction".log()
                 append(instruction)
             }
+
+            append('A')
         }
-
-        append('A')
-        position = end
-        println()
+    }.flatMap {
+        rec(
+            code = code.drop(1),
+            position = end,
+            path = it,
+            toCharMap = toCharMap,
+            toPointMap = toPointMap,
+        )
     }
 }
 
-private fun resolveKeypad(code: String): String = buildString {
-    var position = keyToPointMap.getValue('A').log("position")
-    code.forEach { c ->
-        val end = keyToPointMap.getValue(c).log("c:$c end:")
-
-        val path = pointToKeyMap.findAllShortestPath(
-            start = position,
-            end = end,
-        ).minBy { countTurns(it) }
-
-        path.log("path:")
-        path.windowed(2, 1, false).forEach { (a, b) ->
-            val instruction = when {
-                b.x < a.x -> '<'
-                b.x > a.x -> '>'
-                b.y < a.y -> '^'
-                b.y > a.y -> 'v'
-                else -> error("a:$a b:$b")
-            }
-            "checking a:$a b:$b out:$instruction".log()
-            append(instruction)
-        }
-
-        append('A')
-        position = end
-        println()
-    }
-}
-
-private fun Map<Point, Char>.findShortestPath(
-    start: Point,
-    end: Point,
-): Pair<Int, List<Point>> {
-    val distances = mutableMapOf<Point, Int>().withDefault { Int.MAX_VALUE }
-    distances[start] = 0
-
-    val queue = PriorityQueue<Pair<Point, List<Point>>>(compareBy { distances[it.first] })
-    queue.add(start to emptyList())
-
-    val visited = mutableSetOf<Point>()
-    while (queue.isNotEmpty()) {
-        val entry = queue.poll()
-        val (point, path) = entry
-        val distance = distances.getValue(point)
-
-        if (point == end) return distance to path + point
-
-        if (point in visited) continue
-        visited += point
-
-        point.neighbors()
-            .filter { this[it] != null }
-            .forEach { n ->
-                val distanceToN = distance + 1
-                if (distanceToN < distances.getValue(n)) {
-                    distances[n] = distanceToN
-                    queue += n to path + point
-                }
-            }
-    }
-
-    error("")
-}
-
-private fun Map<Point, Char>.findAllShortestPath(
+private val keyCache = mutableMapOf<Pair<Point, Point>, List<List<Point>>>()
+private val dirCache = mutableMapOf<Pair<Point, Point>, List<List<Point>>>()
+private fun findAllShortestPath(
+    map: Map<Point, Char>,
     start: Point,
     end: Point,
 ): List<List<Point>> {
-    val distances = mutableMapOf<Point, Int>().withDefault { Int.MAX_VALUE }
-    distances[start] = 0
+    val cache = if (map === pointToKeyMap) {
+        keyCache
+    } else if (map === pointToDirMap) {
+        dirCache
+    } else {
+        error("")
+    }
+    return cache.getOrPut(start to end) {
+        val distances = mutableMapOf<Point, Int>().withDefault { Int.MAX_VALUE }
+        distances[start] = 0
 
-    val queue = PriorityQueue<Pair<Point, List<Point>>>(compareBy { distances[it.first] })
-    queue.add(start to emptyList())
+        val queue = PriorityQueue<Pair<Point, List<Point>>>(compareBy { distances[it.first] })
+        queue.add(start to emptyList())
 
-    var min = Int.MAX_VALUE
-    val visited = mutableSetOf<Point>()
-    val paths = mutableListOf<List<Point>>()
-    while (queue.isNotEmpty()) {
-        val entry = queue.poll()
-       entry.log("entry:")
-        val (point, path) = entry
-        val distance = distances.getValue(point)
+        var min = Int.MAX_VALUE
+        val paths = mutableListOf<List<Point>>()
+        while (queue.isNotEmpty()) {
+            val entry = queue.poll()
+            val (point, path) = entry
+            val distance = distances.getValue(point)
 
-        if (point == end) {
-            val fullPath = path + point
-            if (fullPath.size <= min) {
-                fullPath.log("PATH:")
-                min = fullPath.size
-                paths.add(fullPath)
-                continue
-            } else {
-                queue.log("queue:")
-                break
-            }
-        }
-
-//        if (point in visited) {
-//            continue
-//        }
-        visited += point
-
-        point.neighbors()
-            .filter { this[it] != null }
-            .forEach { n ->
-                val distanceToN = distance + 1
-                if (distanceToN <= distances.getValue(n)) {
-                    "adding n:$n".log()
-                    distances[n] = distanceToN
-                    queue += n to path + point
+            if (point == end) {
+                val fullPath = path + point
+                if (fullPath.size <= min) {
+                    min = fullPath.size
+                    paths.add(fullPath)
+                    continue
+                } else {
+                    break
                 }
             }
+
+            point.neighbors()
+                .filter { map[it] != null }
+                .forEach { n ->
+                    val distanceToN = distance + 1
+                    if (distanceToN <= distances.getValue(n)) {
+                        distances[n] = distanceToN
+                        queue += n to path + point
+                    }
+                }
+        }
+        return@getOrPut paths
     }
-
-    return paths
 }
-
-private fun countTurns(points: List<Point>): Int {
-    return points.windowed(3, 1, false).count { (a, b, c) ->
-        var count = 0
-        if (a.x != c.x) count++
-        if (a.y != c.y) count++
-        count == 2
-    }
-}
-
