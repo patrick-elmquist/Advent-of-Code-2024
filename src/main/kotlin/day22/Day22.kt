@@ -3,80 +3,17 @@
 package day22
 
 import common.day
-import common.util.log
-import kotlinx.serialization.descriptors.setSerialDescriptor
 
 // answer #1: 16999668565
-// answer #2:
-
-private val tenIterations = listOf(
-    15887950,
-    16495136,
-    527345,
-    704524,
-    1553684,
-    12683156,
-    11100544,
-    12249484,
-    7753432,
-    5908254,
-)
-
-private val tenPrices = listOf(
-    3L,
-    0L,
-    6L,
-    5L,
-    4L,
-    4L,
-    6L,
-    4L,
-    4L,
-    2L,
-)
-
-inline fun mix(a: Long, b: Long): Long = a xor b
-inline fun prune(a: Long): Long = a % 16777216L
-inline fun price(a: Long): Long = a % 10L
-inline fun nextSecret(old: Long): Long {
-    var secret = prune(mix(old, 64L * old))
-    secret = prune(mix(secret, (secret / 32f).toLong()))
-    secret = prune(mix(secret, secret * 2048L))
-    return secret
-}
-
-private fun findRepeatingSequence(map: Map<List<Long>, Long>): Int {
-    val list = map.toList()
-    val size = list.size / 2
-
-
-
-
-
-
-    TODO()
-}
+// answer #2: 1898
 
 fun main() {
     day(n = 22) {
         part1 { input ->
-            var i = 123L
-            val test = buildList {
-                repeat(10) {
-                    i = nextSecret(i)
-                    add(i)
-                }
+            val buyers = input.lines.map(String::toLong)
+            buyers.sumOf { initial ->
+                generateSequence(initial) { nextSecret(it) }.drop(2000).first()
             }
-
-            check(test == tenIterations.map(Int::toLong)) { "$test\n$tenIterations" }
-            input.lines.map(String::toLong)
-                .sumOf { initial ->
-                    var secret = initial
-                    repeat(2000) {
-                        secret = nextSecret(secret)
-                    }
-                    secret
-                }
         }
         verify {
             expect result 16999668565L
@@ -84,34 +21,57 @@ fun main() {
         }
 
         part2 { input ->
-            val sellers = input.lines.map(String::toLong)
-
-            val allSequences = sellers.asSequence()
-                .map { seller ->
-                    seller.log("seller")
-                    seller to buildList {
-                        var secret = seller
-                        add(secret)
-                        repeat(2000) {
-                            secret = nextSecret(secret)
-                            add(secret)
-                        }
+            val buyers = input.lines.map(String::toLong)
+            val buyersSequencesWithPrice = buyers.map { buyer ->
+                buildMap {
+                    val prices = calculatePrices(buyer)
+                    for (i in 4..prices.lastIndex) {
+                        val sequence = listOf(
+                            prices[i - 3] - prices[i - 4],
+                            prices[i - 2] - prices[i - 3],
+                            prices[i - 1] - prices[i - 2],
+                            prices[i] - prices[i - 1],
+                        )
+                        putIfAbsent(sequence, prices[i])
                     }
-                        .map(::price)
-                        .windowed(5).associate { it.zipWithNext { a, b -> b - a } to it.last() }
-                }.toList()
-
-            allSequences.map { (seller, cache) ->
-                seller.log()
-                cache.log()
-                println()
+                }
             }
 
+            val sequencesWithTotals = buildMap {
+                buyersSequencesWithPrice.forEach { map ->
+                    map.entries.forEach { (seq, price) ->
+                        merge(seq, price, Long::plus)
+                    }
+                }
+            }
+
+            sequencesWithTotals.values.max()
         }
         verify {
-            breakAfterTest()
-            expect result null
-            run test 2 expect Unit
+            expect result 1898L
+            run test 2 expect 23L
         }
     }
 }
+
+private fun calculatePrices(buyer: Long): List<Long> =
+    buildList {
+        var secret = buyer
+        add(secret)
+        repeat(2000) {
+            secret = nextSecret(secret)
+            add(secret)
+        }
+    }.map(::price)
+
+inline fun nextSecret(previous: Long): Long {
+    var secret = previous
+    secret = secret.mix(64L * secret).prune()
+    secret = secret.mix(secret / 32L).prune()
+    secret = secret.mix(secret * 2048L).prune()
+    return secret
+}
+
+inline fun Long.mix(b: Long): Long = this xor b
+inline fun Long.prune(): Long = this % 16777216L
+inline fun price(a: Long): Long = a % 10L
