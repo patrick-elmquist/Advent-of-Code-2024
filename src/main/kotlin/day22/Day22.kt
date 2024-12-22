@@ -53,15 +53,12 @@ fun main() {
 }
 
 private fun buyerSequence(buyer: Long): Sequence<Long> =
-    generateSequence(buyer) { nextSecret(it) }.take(2001)
-
-private inline fun nextSecret(previous: Long): Long {
-    var secret = previous
-    secret = secret.mix(64L * secret).prune()
-    secret = secret.mix(secret / 32L).prune()
-    secret = secret.mix(secret * 2048L).prune()
-    return secret
-}
+    generateSequence(buyer) {
+        var secret = it
+        secret = secret.mix(64L * secret).prune()
+        secret = secret.mix(secret / 32L).prune()
+        secret.mix(secret * 2048L).prune()
+    }.take(2001)
 
 private inline fun Long.mix(b: Long): Long = this xor b
 private inline fun Long.prune(): Long = this % 16777216L
