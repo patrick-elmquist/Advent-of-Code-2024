@@ -3,6 +3,8 @@
 package day22
 
 import common.day
+import common.util.log
+import kotlin.time.TimeSource
 
 // answer #1: 16999668565
 // answer #2: 1898
@@ -30,7 +32,8 @@ fun main() {
                             prices[i - 1] - prices[i - 2],
                             prices[i] - prices[i - 1],
                         )
-                        putIfAbsent(sequence, prices[i])
+                        // joining to string as it's quicker as a key than list
+                        putIfAbsent(sequence.joinToString(""), prices[i])
                     }
                 }
             }
