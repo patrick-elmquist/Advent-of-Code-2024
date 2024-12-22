@@ -3,6 +3,8 @@
 package day22
 
 import common.day
+import common.util.log
+import kotlinx.serialization.descriptors.setSerialDescriptor
 
 // answer #1: 16999668565
 // answer #2:
@@ -20,13 +22,39 @@ private val tenIterations = listOf(
     5908254,
 )
 
+private val tenPrices = listOf(
+    3L,
+    0L,
+    6L,
+    5L,
+    4L,
+    4L,
+    6L,
+    4L,
+    4L,
+    2L,
+)
+
 inline fun mix(a: Long, b: Long): Long = a xor b
 inline fun prune(a: Long): Long = a % 16777216L
+inline fun price(a: Long): Long = a % 10L
 inline fun nextSecret(old: Long): Long {
     var secret = prune(mix(old, 64L * old))
     secret = prune(mix(secret, (secret / 32f).toLong()))
     secret = prune(mix(secret, secret * 2048L))
     return secret
+}
+
+private fun findRepeatingSequence(map: Map<List<Long>, Long>): Int {
+    val list = map.toList()
+    val size = list.size / 2
+
+
+
+
+
+
+    TODO()
 }
 
 fun main() {
@@ -40,7 +68,7 @@ fun main() {
                 }
             }
 
-            check(test == tenIterations.map(Int::toLong)) { "$test\n$tenIterations"}
+            check(test == tenIterations.map(Int::toLong)) { "$test\n$tenIterations" }
             input.lines.map(String::toLong)
                 .sumOf { initial ->
                     var secret = initial
@@ -56,11 +84,34 @@ fun main() {
         }
 
         part2 { input ->
+            val sellers = input.lines.map(String::toLong)
+
+            val allSequences = sellers.asSequence()
+                .map { seller ->
+                    seller.log("seller")
+                    seller to buildList {
+                        var secret = seller
+                        add(secret)
+                        repeat(2000) {
+                            secret = nextSecret(secret)
+                            add(secret)
+                        }
+                    }
+                        .map(::price)
+                        .windowed(5).associate { it.zipWithNext { a, b -> b - a } to it.last() }
+                }.toList()
+
+            allSequences.map { (seller, cache) ->
+                seller.log()
+                cache.log()
+                println()
+            }
 
         }
         verify {
+            breakAfterTest()
             expect result null
-            run test 1 expect Unit
+            run test 2 expect Unit
         }
     }
 }
