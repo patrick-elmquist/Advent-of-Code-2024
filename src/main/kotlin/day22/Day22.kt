@@ -11,9 +11,7 @@ fun main() {
     day(n = 22) {
         part1 { input ->
             val buyers = input.lines.map(String::toLong)
-            buyers.sumOf { initial ->
-                generateSequence(initial) { nextSecret(it) }.drop(2000).first()
-            }
+            buyers.sumOf { buyer -> buyerSequence(buyer).last() }
         }
         verify {
             expect result 16999668565L
@@ -24,7 +22,7 @@ fun main() {
             val buyers = input.lines.map(String::toLong)
             val buyersSequencesWithPrice = buyers.map { buyer ->
                 buildMap {
-                    val prices = calculatePrices(buyer)
+                    val prices = buyerSequence(buyer).map(::price).toList()
                     for (i in 4..prices.lastIndex) {
                         val sequence = listOf(
                             prices[i - 3] - prices[i - 4],
@@ -54,17 +52,10 @@ fun main() {
     }
 }
 
-private fun calculatePrices(buyer: Long): List<Long> =
-    buildList {
-        var secret = buyer
-        add(secret)
-        repeat(2000) {
-            secret = nextSecret(secret)
-            add(secret)
-        }
-    }.map(::price)
+private fun buyerSequence(buyer: Long): Sequence<Long> =
+    generateSequence(buyer) { nextSecret(it) }.take(2001)
 
-inline fun nextSecret(previous: Long): Long {
+private inline fun nextSecret(previous: Long): Long {
     var secret = previous
     secret = secret.mix(64L * secret).prune()
     secret = secret.mix(secret / 32L).prune()
@@ -72,6 +63,6 @@ inline fun nextSecret(previous: Long): Long {
     return secret
 }
 
-inline fun Long.mix(b: Long): Long = this xor b
-inline fun Long.prune(): Long = this % 16777216L
-inline fun price(a: Long): Long = a % 10L
+private inline fun Long.mix(b: Long): Long = this xor b
+private inline fun Long.prune(): Long = this % 16777216L
+private inline fun price(a: Long): Long = a % 10L
