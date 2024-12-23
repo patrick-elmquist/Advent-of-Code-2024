@@ -2,7 +2,6 @@ package day23
 
 import common.Input
 import common.day
-import kotlinx.coroutines.async
 import kotlin.collections.component1
 import kotlin.collections.component2
 
@@ -53,10 +52,10 @@ private fun Map<String, Set<String>>.dfsCycle(
     node: String,
     parent: String,
     cycles: MutableList<List<String>>,
-    visitCount: MutableMap<String, Int> = mutableMapOf(),
+    color: MutableMap<String, Int> = mutableMapOf(),
     parents: MutableMap<String, String> = mutableMapOf(),
 ) {
-    when (visitCount[node]) {
+    when (color[node]) {
         1 -> {
             val cycle = buildList {
                 add(parent)
@@ -73,15 +72,15 @@ private fun Map<String, Set<String>>.dfsCycle(
 
         else -> {
             parents[node] = parent
-            visitCount[node] = 1
+            color[node] = 1
 
             val neighbors = getValue(node)
             for (neighbor in neighbors) {
                 if (neighbor == parents[node]) continue
-                dfsCycle(neighbor, node, cycles, visitCount, parents)
+                dfsCycle(neighbor, node, cycles, color, parents)
             }
 
-            visitCount[node] = 2
+            color[node] = 2
         }
     }
 }
