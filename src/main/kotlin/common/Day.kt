@@ -3,6 +3,7 @@
 package common
 
 import kotlinx.coroutines.runBlocking
+import kotlin.time.Duration
 import kotlin.time.measureTimedValue
 
 typealias Solver = (Input) -> Any?
@@ -44,7 +45,7 @@ private inline fun Sheet.verifyAndRun(input: Input) {
         print("answer #$n: ")
         result
             .onSuccess {
-                println("${it.output} (${it.time.inWholeMilliseconds}ms)")
+                println("${it.output} (${it.time.toMillisString()})")
             }
             .onFailure {
                 println(it.message)
@@ -67,31 +68,31 @@ private inline fun Solver.evaluate(
         val result = runWithTimer(testInput)
         val testPassed = result.output == it.expected
 
-        print("[${if (testPassed) "PASS" else "FAIL"}]")
+        print("[${if (testPassed) "PASS ${result.time.toMillisString()}" else "FAIL"}]")
         print(" Input: ${testInput.lines}")
         println()
-        if (!testPassed) {
-            println("Expected: ${it.expected}")
-            println("Actual: ${result.output}")
+        testPassed.also { passed ->
+            if (!passed) {
+                println("Expected: ${it.expected}")
+                println("Actual: ${result.output}")
+            }
         }
-
-        testPassed
     }
 
-    if (!testsPassed) return failure("One or more tests failed.")
-
-    if (testOnly) return failure("Break added")
-
-    return try {
-        val result = runWithTimer(input)
-        if (expected == null || result.output == expected) {
-            success(result)
-        } else {
-            failure("FAIL Expected:$expected actual:${result.output}")
+    return when {
+        !testsPassed -> failure("One or more tests failed.")
+        testOnly -> failure("Break added")
+        else -> try {
+            val result = runWithTimer(input)
+            if (expected == null || result.output == expected) {
+                success(result)
+            } else {
+                failure("FAIL Expected:$expected actual:${result.output}")
+            }
+        } catch (e: Throwable) {
+            e.printStackTrace()
+            failure(e)
         }
-    } catch (e: Throwable) {
-        e.printStackTrace()
-        failure(e)
     }
 }
 
@@ -102,3 +103,5 @@ private inline fun Solver.runWithTimer(input: Input) =
 private inline fun success(answer: Answer) = Result.success(answer)
 private inline fun failure(message: String) = Result.failure<Answer>(AssertionError(message))
 private inline fun failure(throwable: Throwable) = Result.failure<Answer>(throwable)
+
+private fun Duration.toMillisString() = "${inWholeMilliseconds}ms"

@@ -1,7 +1,5 @@
 package common
 
-import common.util.loggingEnabled
-
 class Sheet(val day: Int) {
     private lateinit var solver1: Solver
     private lateinit var config1: Config

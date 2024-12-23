@@ -30,14 +30,14 @@ fun main() {
     }
 }
 
-private fun parseToLists(input: Input): Pair<MutableList<Int>, MutableList<Int>> {
+private fun parseToLists(input: Input): Pair<List<Int>, List<Int>> {
     val left = mutableListOf<Int>()
     val right = mutableListOf<Int>()
     input.lines
-        .map { it.split("   ") }
+        .map { it.split("   ").map(String::toInt) }
         .forEach { (a, b) ->
-            left.add(a.toInt())
-            right.add(b.toInt())
+            left.add(a)
+            right.add(b)
         }
     return Pair(left, right)
 }

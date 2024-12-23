@@ -2,6 +2,7 @@ package day23
 
 import common.Input
 import common.day
+import kotlinx.coroutines.async
 import kotlin.collections.component1
 import kotlin.collections.component2
 
@@ -27,10 +28,9 @@ fun main() {
             connections
                 .findCycles()
                 .filter { cycle ->
-                    val intersectingNodes = cycle
+                    val cycleNeighbors = cycle
                         .map { node -> connections.getValue(node) + node }
-                        .reduce(Set<String>::intersect)
-                    cycle.size == intersectingNodes.size
+                    cycle.all { c -> cycleNeighbors.all { c in it } }
                 }
                 .maxBy { it.size }
                 .sorted()
