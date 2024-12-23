@@ -1,7 +1,8 @@
 package day23
 
 import common.day
-import kotlin.collections.orEmpty
+import common.util.log
+import kotlinx.coroutines.currentCoroutineContext
 
 // answer #1: 1173
 // answer #2:
@@ -25,7 +26,7 @@ fun main() {
     day(n = 23) {
         part1 { input ->
             val allPairs = input.lines.flatMap {
-                it.split('-').sorted().let { (a,b) -> listOf(a to b, b to a)}
+                it.split('-').sorted().let { (a, b) -> listOf(a to b, b to a) }
             }.distinct()
 
             val connections = allPairs.groupBy { it.first }
@@ -45,13 +46,87 @@ fun main() {
         }
 
         part2 { input ->
+            val allPairs = input.lines.flatMap {
+                it.split('-').sorted().let { (a, b) -> listOf(a to b, b to a) }
+            }.distinct()
 
+            val connections = allPairs.groupBy { it.first }
+                .mapValues { (_, value) -> value.map { it.second }.toSet() }
+
+            val count = connections.keys.map { node ->
+                connections.countCyclesOfThree(node)
+            }
+
+            val counted = count.flatMap { it }.toSet().count { it.any { it.startsWith('t') } }
+            counted
+
+            val toList = connections.entries.toList()
+            val node0 = toList[0]
+            val node1 = toList[1]
+            var cycles = mutableListOf<List<String>>()
+            connections.dfsCycle(
+                node = node0.value.first(),
+                parent = node0.key,
+                cycles = cycles,
+            )
+            val sortedCycles = cycles.map { it.sorted() }.sortedBy { it.size }
+            sortedCycles.size.log()
+            sortedCycles.log()
+            val max = sortedCycles.maxBy { it.size }.size.log()
+            sortedCycles.filter { it.size == max }.size.log("max:")
+
+            connections.entries.joinToString("\n").log()
+            println()
+            sortedCycles.filter { cycle ->
+                val s = cycle.map { connections.getValue(it) + it }
+                    .reduce { a, b -> a.intersect(b) }
+                cycle.all { it in s }
+            }.maxBy { it.size }.sorted().joinToString(",").log()
         }
         verify {
             expect result null
-            run test 1 expect Unit
+            run test 1 expect "co,de,ka,ta"
         }
     }
+}
+
+private fun Map<String, Set<String>>.dfsCycle(
+    node: String,
+    parent: String,
+    colors: MutableMap<String, Int> = mutableMapOf(),
+    cycles: MutableList<List<String>> = mutableListOf(),
+    parents: MutableMap<String, String> = mutableMapOf(),
+) {
+    val color = colors[node]
+    if (color == 2) {
+        return
+    }
+
+    if (color == 1) {
+        val cycle = mutableListOf<String>()
+        var cur = parent
+        cycle.add(parent)
+
+        while (cur != node) {
+            cur = parents.getValue(cur)
+            cycle.add(cur)
+        }
+        cycles.add(cycle)
+        return
+    }
+
+    parents[node] = parent
+    colors[node] = 1
+
+    val neighbors = getValue(node)
+    for (neighbor in neighbors) {
+        if (neighbor == parents[node]) {
+            continue
+        }
+        dfsCycle(neighbor, node, colors, cycles, parents)
+    }
+
+    colors[node] = 2
 }
 
 private fun Map<String, Set<String>>.countCyclesOfThree(node: String): Set<List<String>> {
@@ -68,79 +143,3 @@ private fun Map<String, Set<String>>.countCyclesOfThree(node: String): Set<List<
     }
     return cycles
 }
-
-private fun isCyclicUtil(
-    node: String,
-    connections: Map<String, Set<String>>,
-    visited: MutableSet<String>,
-    parent: String,
-): Boolean {
-    visited += node
-
-    for (a in connections[node].orEmpty()) {
-        if (a !in visited) {
-            if (isCyclicUtil(a, connections, visited, node)) {
-                return true
-            }
-        } else if (a != parent) {
-            return true
-        }
-    }
-    return false
-}
-
-private fun dfs(
-    connections: Map<String, Set<String>>,
-    visited: MutableSet<String>,
-    n: Int,
-    vert: String,
-    start: String,
-): Int {
-    visited += vert
-
-    val connectedTo = connections[vert].orEmpty()
-
-    if (n == 0) {
-        visited -= vert
-        return if (start in connectedTo) 1 else 0
-    }
-
-    var sum = 0
-    for (connection in connectedTo) {
-        if (connection !in visited) {
-            sum += dfs(connections, visited, n - 1, connection, start)
-        }
-    }
-
-    visited -= vert
-
-    return sum
-}
-
-private fun countCycles(connections: Map<String, Set<String>>, n: Int = 3): Int {
-    val visited = mutableSetOf<String>()
-    val keys = connections.keys
-
-    var sum = 0
-    for (key in keys) {
-        sum += dfs(connections, visited, n - 1, key, key)
-    }
-
-    return sum
-}
-
-private fun isCyclic(node: String, connections: Map<String, Set<String>>): Boolean {
-    val visited = mutableSetOf<String>()
-    visited += node
-
-    val connectedTo = connections[node].orEmpty()
-    for (connectedNode in connectedTo) {
-        if (connectedNode !in visited) {
-            if (isCyclicUtil(connectedNode, connections, visited, node)) {
-                return true
-            }
-        }
-    }
-    return false
-}
-
