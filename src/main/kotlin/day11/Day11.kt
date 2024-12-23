@@ -34,35 +34,33 @@ private val Long.length: Int
         else -> log10(abs(toDouble())).toInt() + 1
     }
 
+private val state: MutableMap<Pair<Long, Int>, Long> = mutableMapOf()
 private fun countStones(
     blinksRemaining: Int,
     number: Long,
-    state: MutableMap<Pair<Long, Int>, Long> = mutableMapOf(),
 ): Long {
-    if (blinksRemaining == 0) return 1
+    return state.getOrPut(number to blinksRemaining) {
+        if (blinksRemaining == 0) {
+            1
+        } else {
+            val len = number.length
+            val stones = when {
+                number == 0L -> listOf(1L)
+                len % 2 == 0 -> {
+                    listOf(
+                        number / 10.0.pow(len / 2).toLong(),
+                        number % 10.0.pow(len / 2).toLong(),
+                    )
+                }
+                else -> listOf(number * 2024)
+            }
 
-    val cache = state[number to blinksRemaining]
-    if (cache != null) return cache
-
-    val len = number.length
-    val stones = when {
-        number == 0L -> listOf(1L)
-        len % 2 == 0 -> {
-            listOf(
-                number / 10.0.pow(len / 2).toLong(),
-                number % 10.0.pow(len / 2).toLong(),
-            )
+            stones.sumOf { stone ->
+                countStones(
+                    blinksRemaining = blinksRemaining - 1,
+                    number = stone,
+                )
+            }
         }
-        else -> listOf(number * 2024)
     }
-
-    val result = stones.sumOf { stone ->
-        countStones(
-            blinksRemaining = blinksRemaining - 1,
-            number = stone,
-            state = state,
-        )
-    }
-    state[number to blinksRemaining] = result
-    return result
 }

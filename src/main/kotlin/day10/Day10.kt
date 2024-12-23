@@ -43,7 +43,8 @@ private fun findTrails(zero: Point, map: Map<Point, Int>): List<Point> =
     buildList {
         val queue = arrayDequeOf(zero)
         while (queue.isNotEmpty()) {
-            val (tile, value) = queue.removeFirst().let { it to map.getValue(it) }
+            val tile = queue.removeFirst()
+            val value = map.getValue(tile)
             if (value == 9) {
                 add(tile)
             } else {

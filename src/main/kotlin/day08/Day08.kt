@@ -59,7 +59,7 @@ fun main() {
                 }
             }
 
-            antinodes.count { it in grid }
+            antinodes.size
         }
         verify {
             expect result 1147
