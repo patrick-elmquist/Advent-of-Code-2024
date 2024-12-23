@@ -1,26 +1,9 @@
 package day23
 
 import common.day
-import common.util.log
-import kotlinx.coroutines.currentCoroutineContext
 
 // answer #1: 1173
-// answer #2:
-
-private val interResult = listOf(
-    listOf("aq,cg,yn"),
-    listOf("aq,vc,wq"),
-    listOf("co,de,ka"),
-    listOf("co,de,ta"),
-    listOf("co,ka,ta"),
-    listOf("de,ka,ta"),
-    listOf("kh,qp,ub"),
-    listOf("qp,td,wh"),
-    listOf("tb,vc,wq"),
-    listOf("tc,td,wh"),
-    listOf("td,wh,yn"),
-    listOf("ub,vc,wq"),
-).map { it.map { it.split(',') } }
+// answer #2: cm,de,ez,gv,hg,iy,or,pw,qu,rs,sn,uc,wq
 
 fun main() {
     day(n = 23) {
@@ -31,7 +14,6 @@ fun main() {
 
             val connections = allPairs.groupBy { it.first }
                 .mapValues { (_, value) -> value.map { it.second }.toSet() }
-
 
             val count = connections.keys.map { node ->
                 connections.countCyclesOfThree(node)
@@ -53,16 +35,7 @@ fun main() {
             val connections = allPairs.groupBy { it.first }
                 .mapValues { (_, value) -> value.map { it.second }.toSet() }
 
-            val count = connections.keys.map { node ->
-                connections.countCyclesOfThree(node)
-            }
-
-            val counted = count.flatMap { it }.toSet().count { it.any { it.startsWith('t') } }
-            counted
-
-            val toList = connections.entries.toList()
-            val node0 = toList[0]
-            val node1 = toList[1]
+            val node0 = connections.entries.toList().first()
             var cycles = mutableListOf<List<String>>()
             connections.dfsCycle(
                 node = node0.value.first(),
@@ -70,21 +43,15 @@ fun main() {
                 cycles = cycles,
             )
             val sortedCycles = cycles.map { it.sorted() }.sortedBy { it.size }
-            sortedCycles.size.log()
-            sortedCycles.log()
-            val max = sortedCycles.maxBy { it.size }.size.log()
-            sortedCycles.filter { it.size == max }.size.log("max:")
 
-            connections.entries.joinToString("\n").log()
-            println()
             sortedCycles.filter { cycle ->
                 val s = cycle.map { connections.getValue(it) + it }
                     .reduce { a, b -> a.intersect(b) }
                 cycle.all { it in s }
-            }.maxBy { it.size }.sorted().joinToString(",").log()
+            }.maxBy { it.size }.sorted().joinToString(",")
         }
         verify {
-            expect result null
+            expect result "cm,de,ez,gv,hg,iy,or,pw,qu,rs,sn,uc,wq"
             run test 1 expect "co,de,ka,ta"
         }
     }
