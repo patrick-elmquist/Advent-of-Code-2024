@@ -15,7 +15,7 @@ fun main() {
             connections.keys
                 .flatMap { node -> connections.countCyclesOfThree(node) }
                 .toSet()
-                .count { it.any { it.startsWith('t') } }
+                .count { cycle -> cycle.any { it.startsWith('t') } }
         }
         verify {
             expect result 1173
@@ -30,7 +30,7 @@ fun main() {
                     val intersectingNodes = cycle
                         .map { node -> connections.getValue(node) + node }
                         .reduce(Set<String>::intersect)
-                    cycle.all { node -> node in intersectingNodes }
+                    cycle.size == intersectingNodes.size
                 }
                 .maxBy { it.size }
                 .sorted()
@@ -61,7 +61,7 @@ private fun Map<String, Set<String>>.dfsCycle(
             val cycle = buildList {
                 add(parent)
                 var current = parent
-                while (current != node) {
+                while (last() != node) {
                     current = parents.getValue(current)
                     add(current)
                 }
@@ -77,9 +77,7 @@ private fun Map<String, Set<String>>.dfsCycle(
 
             val neighbors = getValue(node)
             for (neighbor in neighbors) {
-                if (neighbor == parents[node]) {
-                    continue
-                }
+                if (neighbor == parents[node]) continue
                 dfsCycle(neighbor, node, cycles, visitCount, parents)
             }
 
@@ -101,8 +99,11 @@ private fun Map<String, Set<String>>.countCyclesOfThree(node: String) =
     }
 
 private fun buildConnectionsMap(input: Input): Map<String, Set<String>> =
-    input.lines
-        .flatMap { it.split('-').let { (a, b) -> listOf(a to b, b to a) } }
-        .distinct()
-        .groupBy { it.first }
-        .mapValues { (_, value) -> value.map { it.second }.toSet() }
+    buildMap<String, MutableSet<String>> {
+        input.lines.forEach {
+            it.split('-').let { (a, b) ->
+                getOrPut(a) { mutableSetOf() }.add(b)
+                getOrPut(b) { mutableSetOf() }.add(a)
+            }
+        }
+    }
