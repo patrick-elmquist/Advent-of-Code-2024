@@ -23,6 +23,7 @@ fun main() {
         }
 
         part2 { input ->
+            // TODO revisit with proper Bron–Kerbosch
             val connections = buildConnectionsMap(input)
             connections
                 .findCycles()
