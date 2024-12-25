@@ -3,10 +3,18 @@ package day24
 import common.day
 import common.util.log
 import common.util.sliceByBlank
+import common.util.unsafeMapOf
 import kotlin.math.pow
 
 // answer #1: 46362252142374
 // answer #2: cbd,gmh,jmq,qrh,rqf,z06,z13,z38
+
+private enum class Operation(val op: (a: Boolean, b: Boolean) -> Boolean) {
+    AND({ a, b -> a and b }),
+    OR({ a, b -> a or b }),
+    XOR({ a, b -> a xor b });
+    operator fun invoke(a: Boolean, b: Boolean) = op(a, b)
+}
 
 fun main() {
     day(n = 24) {
@@ -26,7 +34,7 @@ fun main() {
                 gates.getOrPut(key) { mutableSetOf() }.add(output)
             }
 
-            val values = mutableMapOf<String, Boolean>()
+            val values = unsafeMapOf<String, Boolean>()
             values.putAll(initial)
 
             val queue = ArrayDeque(gates.keys)
@@ -37,14 +45,8 @@ fun main() {
                 val (a, b, op) = entry
                 val destinations = gates.getValue(entry)
 
-                val aValue = values.getValue(a)
-                val bValue = values.getValue(b)
-                val value = when (op) {
-                    "AND" -> aValue and bValue
-                    "OR" -> aValue or bValue
-                    "XOR" -> aValue xor bValue
-                    else -> error(op)
-                }
+                val operation = Operation.valueOf(op)
+                val value = operation(values[a], values[b])
                 destinations.forEach { values[it] = value }
             }
 
@@ -90,7 +92,8 @@ fun main() {
                         add("    $opString --> $it")
                     }
                 }
-            }.sorted().joinToString("\n").log()
+            }.sorted().joinToString("\n")
+//                .log()
 
             // z06 and jmq should be swapped
             // gmh and z13 should be swapped

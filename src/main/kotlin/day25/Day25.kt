@@ -12,24 +12,20 @@ fun main() {
             val (keys, locks) = input.lines.sliceByBlank()
                 .map { lines ->
                     val values = MutableList(5) { 0 }
-                    lines.drop(1).dropLast(1).forEach {
-                        it.forEachIndexed { index, i ->
+                    lines.subList(1, 6).forEach { line ->
+                        line.forEachIndexed { index, i ->
                             values[index] += if (i == '#') 1 else 0
                         }
                     }
-
-                    val isLock = lines.first().any { it == '#' }
-                    if (isLock) 'L' to values else 'K' to values
-                }.partition { it.first == 'K' }
-
-            var match = 0
-            for (key in keys.map { it.second }) {
-                for (lock in locks.map { it.second }) {
-                    val isMatch = key.zip(lock) { a, b -> a + b }.all { it <= 5 }
-                    if (isMatch) match++
+                    lines.first().first() to values
                 }
-            }
-            match
+                .partition { it.first == '#' }
+                .let { (a, b) -> a.map { it.second } to b.map { it.second } }
+
+            fun isMatch(key: List<Int>, lock: List<Int>) =
+                key.zip(lock).all { (a, b) -> a + b <= 5 }
+
+            keys.sumOf { key -> locks.count { lock -> isMatch(key, lock) } }
         }
         verify {
             expect result 2933
@@ -45,3 +41,4 @@ fun main() {
         }
     }
 }
+
