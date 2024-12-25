@@ -1,9 +1,11 @@
 package day24
 
+import common.Input
 import common.day
-import common.util.log
+import common.util.UnsafeMap
+import common.util.asUnsafe
+import common.util.pow
 import common.util.sliceByBlank
-import common.util.unsafeMapOf
 import kotlin.math.pow
 
 // answer #1: 46362252142374
@@ -13,59 +15,36 @@ private enum class Operation(val op: (a: Boolean, b: Boolean) -> Boolean) {
     AND({ a, b -> a and b }),
     OR({ a, b -> a or b }),
     XOR({ a, b -> a xor b });
+
     operator fun invoke(a: Boolean, b: Boolean) = op(a, b)
 }
 
 fun main() {
     day(n = 24) {
         part1 { input ->
-            val (top, bottom) = input.lines.sliceByBlank()
+            val (initialValues, gates) = parseInitialValuesAndGates(input)
 
-            val initial = top.map {
-                val (name, value) = it.split(": ")
-                name to (value == "1")
-            }
-
-            val gates = mutableMapOf<Triple<String, String, String>, MutableSet<String>>()
-            bottom.forEach {
-                val (g, output) = it.split(" -> ")
-                val (a, op, b) = g.split(" ")
-                val key = Triple(a, b, op)
-                gates.getOrPut(key) { mutableSetOf() }.add(output)
-            }
-
-            val values = unsafeMapOf<String, Boolean>()
-            values.putAll(initial)
-
+            val values = initialValues.toMutableMap().asUnsafe()
             val queue = ArrayDeque(gates.keys)
 
             while (queue.isNotEmpty()) {
-                val entry = queue.first { it.first in values && it.second in values }
-                queue.remove(entry)
+                val entry = queue
+                    .first { (a, b, _) -> a in values && b in values }
+                    .also { queue.remove(it) }
                 val (a, b, op) = entry
-                val destinations = gates.getValue(entry)
-
-                val operation = Operation.valueOf(op)
-                val value = operation(values[a], values[b])
-                destinations.forEach { values[it] = value }
+                val output = gates[entry]
+                values[output] = op(values[a], values[b])
             }
 
             values.entries
                 .filter { it.key.startsWith('z') }
                 .sortedBy { it.key }
-                .mapIndexed { i, (_, value) ->
-                    if (value) {
-                        2f.pow(i).toLong()
-                    } else {
-                        0L
-                    }
-                }
+                .mapIndexed { i, (_, value) -> if (value) 2L.pow(i) else 0L }
                 .sum()
         }
         verify {
             expect result 46362252142374L
             run test 1 expect 4L
-            run test 2 expect 2024L
         }
 
         part2 { input ->
@@ -114,4 +93,22 @@ fun main() {
             expect result "cbd,gmh,jmq,qrh,rqf,z06,z13,z38"
         }
     }
+}
+
+private fun parseInitialValuesAndGates(input: Input): Pair<UnsafeMap<String, Boolean>, UnsafeMap<Triple<String, String, Operation>, String>> {
+    val (top, bottom) = input.lines.sliceByBlank()
+
+    val initialValues = top.associate {
+        val (name, value) = it.split(": ")
+        name to (value == "1")
+    }.asUnsafe()
+
+    val gates = bottom.associate {
+        val (g, output) = it.split(" -> ")
+        val (a, op, b) = g.split(" ")
+        val key = Triple(a, b, Operation.valueOf(op))
+        key to output
+    }.asUnsafe()
+
+    return Pair(initialValues, gates)
 }

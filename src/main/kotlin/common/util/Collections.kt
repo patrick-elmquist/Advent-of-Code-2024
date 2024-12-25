@@ -66,20 +66,30 @@ fun <T> Map<Point, T>.minMax(block: (Map.Entry<Point, T>) -> Int): IntRange {
 }
 
 fun <K, V> unsafeMapOf(vararg pairs: Pair<K, V>): UnsafeMap<K, V> =
-    UnsafeMap<K, V>().apply { putAll(pairs) }
+    UnsafeMap<K, V>(pairs.toMap().toMutableMap()).apply { putAll(pairs) }
+
+fun <K, V> Map<K,V>.asUnsafe() = unsafeMapOfAll(this)
+
+fun <K, V> unsafeMapOfAll(map: Map<K, V>): UnsafeMap<K, V> =
+    UnsafeMap<K, V>(map.toMutableMap()).apply { putAll(map) }
+
+fun <K, V> unsafeMapOfAll(list: List<Pair<K, V>>): UnsafeMap<K, V> =
+    UnsafeMap<K, V>(list.toMap().toMutableMap()).apply { putAll(map) }
+
 
 fun <K, V> defaultingMapOf(vararg pairs: Pair<K, V>, default: (K) -> V): UnsafeMap<K, V> =
-    UnsafeMap<K, V>(default = default).apply { putAll(pairs) }
+    UnsafeMap<K, V>(pairs.toMap().toMutableMap(), default = default).apply { putAll(pairs) }
 
-class UnsafeMap<K, V>(
-    val map: MutableMap<K, V> = mutableMapOf(),
+data class UnsafeMap<K, V>(
+    val map: MutableMap<K, V>,
     val default: ((K) -> V)? = null,
 ) : MutableMap<K, V> by map {
     override fun get(key: K): V =
         if (default == null) {
             map.getValue(key)
         } else {
-            map.getOrElse(key) { default(key) }
+            val defaultFn = default
+            map.getOrElse(key) { defaultFn(key) }
         }
 }
 
