@@ -27,11 +27,14 @@ private inline fun collectSolutions(
 private inline fun Sheet.verifyAndRun(input: Input) {
     println("Day $day")
     val hasTests = parts.any { it.config.tests.isNotEmpty() }
+    var passCount = 0
+    var emojiString = StringBuilder()
     parts.forEachIndexed { i, (solution, config) ->
         val n = i + 1
 
         if (config.ignore) {
             println("[IGNORING] Part $n")
+            emojiString.append("🤐")
             return@forEachIndexed
         }
 
@@ -46,12 +49,17 @@ private inline fun Sheet.verifyAndRun(input: Input) {
         result
             .onSuccess {
                 println("${it.output} (${it.time.toMillisString()})")
+                passCount++
+                emojiString.append("⭐️")
             }
             .onFailure {
                 println(it.message)
+                emojiString.append("❌")
             }
         if (hasTests) println()
     }
+
+    println(emojiString)
 }
 
 private inline fun Solver.evaluate(

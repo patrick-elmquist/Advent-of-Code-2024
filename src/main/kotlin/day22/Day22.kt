@@ -3,8 +3,6 @@
 package day22
 
 import common.day
-import common.util.log
-import kotlin.time.TimeSource
 
 // answer #1: 16999668565
 // answer #2: 1898

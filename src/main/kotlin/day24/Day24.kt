@@ -4,20 +4,14 @@ import common.Input
 import common.day
 import common.util.UnsafeMap
 import common.util.asUnsafe
+import common.util.log
+import common.util.out
 import common.util.pow
+import common.util.printMermaidGraph
 import common.util.sliceByBlank
-import kotlin.math.pow
 
 // answer #1: 46362252142374
 // answer #2: cbd,gmh,jmq,qrh,rqf,z06,z13,z38
-
-private enum class Operation(val op: (a: Boolean, b: Boolean) -> Boolean) {
-    AND({ a, b -> a and b }),
-    OR({ a, b -> a or b }),
-    XOR({ a, b -> a xor b });
-
-    operator fun invoke(a: Boolean, b: Boolean) = op(a, b)
-}
 
 fun main() {
     day(n = 24) {
@@ -26,7 +20,6 @@ fun main() {
 
             val values = initialValues.toMutableMap().asUnsafe()
             val queue = ArrayDeque(gates.keys)
-
             while (queue.isNotEmpty()) {
                 val entry = queue
                     .first { (a, b, _) -> a in values && b in values }
@@ -37,9 +30,9 @@ fun main() {
             }
 
             values.entries
-                .filter { it.key.startsWith('z') }
-                .sortedBy { it.key }
-                .mapIndexed { i, (_, value) -> if (value) 2L.pow(i) else 0L }
+                .filter { (key, _) -> key.startsWith('z') }
+                .sortedBy { (key, _) -> key }
+                .mapIndexed { index, (_, value) -> value * 2L.pow(index) }
                 .sum()
         }
         verify {
@@ -50,28 +43,37 @@ fun main() {
         part2 { input ->
             val (_, bottom) = input.lines.sliceByBlank()
 
-            val gates = mutableMapOf<Triple<String, String, String>, MutableSet<String>>()
+            val gates = mutableMapOf<Triple<String, String, String>, String>()
 
             bottom.forEach {
                 val (g, output) = it.split(" -> ")
                 val (a, op, b) = g.split(" ")
                 val key = Triple(a, b, op)
-                gates.getOrPut(key) { mutableSetOf() }.add(output)
+                gates[key] = output
             }
 
             // Approach:
             // Create and log a string for rendering a mermaid diagram
             // of the flow and manually track down weirdness in the adder.
-            buildList {
-                gates.forEach { (a, b, op), out ->
-                    val opString = "${op}___${a}_$b"
-                    add("    $a --> $opString")
-                    add("    $b --> $opString")
-                    out.forEach {
-                        add("    $opString --> $it")
+            printMermaidGraph {
+                gates
+                    .forEach { (a, b, op), out ->
+                        val opString = "${op}___${a}.$b"
+                        addRow(a, opString)
+                        addRow(b, opString)
+                        addRow(opString, out)
                     }
-                }
-            }.sorted().joinToString("\n")
+            }
+//            buildList {
+//                gates.forEach { (a, b, op), out ->
+//                    val opString = "${op}___${a}_$b"
+//                    add("    $a --> $opString")
+//                    add("    $b --> $opString")
+//                    out.forEach {
+//                        add("    $opString --> $it")
+//                    }
+//                }
+//            }.sorted().joinToString("\n")
 //                .log()
 
             // z06 and jmq should be swapped
@@ -95,13 +97,23 @@ fun main() {
     }
 }
 
-private fun parseInitialValuesAndGates(input: Input): Pair<UnsafeMap<String, Boolean>, UnsafeMap<Triple<String, String, Operation>, String>> {
+private enum class Operation(val op: (a: Int, b: Int) -> Int) {
+    AND({ a, b -> a and b }),
+    OR({ a, b -> a or b }),
+    XOR({ a, b -> a xor b });
+
+    operator fun invoke(a: Int, b: Int) = op(a, b)
+}
+
+private fun parseInitialValuesAndGates(
+    input: Input,
+): Pair<Map<String, Int>, UnsafeMap<Triple<String, String, Operation>, String>> {
     val (top, bottom) = input.lines.sliceByBlank()
 
     val initialValues = top.associate {
         val (name, value) = it.split(": ")
-        name to (value == "1")
-    }.asUnsafe()
+        name to value.toInt()
+    }
 
     val gates = bottom.associate {
         val (g, output) = it.split(" -> ")

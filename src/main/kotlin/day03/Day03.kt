@@ -47,8 +47,8 @@ fun main() {
 
 private fun evaluate(instruction: String) =
     instruction
-        .dropWhile { !it.isDigit() }
-        .dropLast(1)
+        .removePrefix("mul(")
+        .removeSuffix(")")
         .split(",")
         .map(String::toInt)
         .reduce(Int::times)

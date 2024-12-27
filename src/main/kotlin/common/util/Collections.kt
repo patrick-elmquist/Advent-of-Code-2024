@@ -93,52 +93,6 @@ data class UnsafeMap<K, V>(
         }
 }
 
-fun <T> Map<Point, T>.print(
-    width: IntRange? = null,
-    height: IntRange? = null,
-    block: (Point, T?) -> Any? = { _, c -> c },
-) {
-    val xRange = width ?: minMax { it.key.x }
-    val yRange = height ?: minMax { it.key.y }
-    for (y in yRange) {
-        for (x in xRange) {
-            val point = Point(x, y)
-            if (loggingEnabled) {
-                print(block(point, get(point)))
-            }
-        }
-        if (loggingEnabled) {
-            println()
-        }
-    }
-}
-
-fun <T> Map<Point, T>.printPadded(
-    width: IntRange? = null,
-    height: IntRange? = null,
-    block: (Point, T?) -> String,
-) {
-    val xRange = width ?: minMax { it.key.x }
-    val yRange = height ?: minMax { it.key.y }
-    print("    ")
-    for (x in xRange) {
-        print(" $x ".padEnd(6))
-    }
-    println()
-    for (y in yRange) {
-        print(" $y:".padStart(4))
-        for (x in xRange) {
-            val point = Point(x, y)
-            if (loggingEnabled) {
-                print(block(point, get(point)))
-            }
-        }
-        if (loggingEnabled) {
-            println()
-        }
-    }
-}
-
 fun <T> List<T>.permutations(): List<List<T>> {
     return if (this.size == 1) listOf(this)
     else this.flatMap { i -> (this - i).permutations().map { listOf(i) + it } }
