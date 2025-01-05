@@ -28,6 +28,9 @@ fun PointL(xy: List<Long>): PointL {
     return PointL(xy[0], xy[1])
 }
 
+fun PointL(x: Int, y: Int) =
+    PointL(x.toLong(), y.toLong())
+
 fun PointL(x: String, y: String) =
     PointL(x.toLong(), y.toLong())
 

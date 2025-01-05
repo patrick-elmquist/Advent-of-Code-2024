@@ -1,22 +1,21 @@
 package common.util
 
-enum class Direction(
-    val point: Point,
-    val pointL: PointL,
-) {
-    Left(Point(-1, 0), PointL(-1L, 0L)),
-    Up(Point(0, -1), PointL(0L, -1L)),
-    Right(Point(1, 0), PointL(1L, 0L)),
-    Down(Point(0, 1), PointL(0L, 1L));
+enum class Direction(val point: Point) {
+    Left(Point(-1, 0)),
+    Up(Point(0, -1)),
+    Right(Point(1, 0)),
+    Down(Point(0, 1));
+
+    val pointL = PointL(point.x, point.y)
 
     companion object
 }
 
 fun Direction.Companion.of(char: Char): Direction = when (char) {
-    '^' -> Direction.Up
-    'v' -> Direction.Down
-    '<' -> Direction.Left
-    '>' -> Direction.Right
+    '^','u','U','n','N' -> Direction.Up
+    'v','d','D','s','S' -> Direction.Down
+    '<','l','L','w','W'-> Direction.Left
+    '>','r','R','e','E' -> Direction.Right
     else -> error("Can't create direction from '$char'")
 }
 

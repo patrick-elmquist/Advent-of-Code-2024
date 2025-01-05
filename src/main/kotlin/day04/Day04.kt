@@ -31,8 +31,8 @@ fun main() {
             val pattern = "MAS"
             grid.keys.count { point ->
                 val topRightPoint = point.copy(x = point.x + 2)
-                val left = grid.check(topRightPoint, diagonalLeftPoints.take(3), pattern)
-                val right = grid.check(point, diagonalRightPoints.take(3), pattern)
+                val left = grid.check(topRightPoint, diagonalLeftPoints.take(2), pattern)
+                val right = grid.check(point, diagonalRightPoints.take(2), pattern)
                 left && right
             }
         }
@@ -44,28 +44,24 @@ fun main() {
 }
 
 private val horizontalPoints = sequenceOf(
-    Point.Zero,
     Point(1, 0),
     Point(2, 0),
     Point(3, 0)
 )
 
 private val verticalPoints = sequenceOf(
-    Point.Zero,
     Point(0, 1),
     Point(0, 2),
     Point(0, 3),
 )
 
 private val diagonalLeftPoints = sequenceOf(
-    Point.Zero,
     Point(-1, 1),
     Point(-2, 2),
     Point(-3, 3),
 )
 
 private val diagonalRightPoints = sequenceOf(
-    Point.Zero,
     Point(1, 1),
     Point(2, 2),
     Point(3, 3),
@@ -76,7 +72,13 @@ private fun Map<Point, Char>.check(
     directions: Sequence<Point>,
     pattern: String
 ): Boolean {
+    val char = get(point)
+    if (char != pattern.first() && char != pattern.last()) {
+        return false
+    }
+
     val string = buildString {
+        append(char)
         directions
             .map { it + point }
             .forEach { p ->
