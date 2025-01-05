@@ -29,11 +29,16 @@ fun main() {
         part2 { input ->
             val grid = input.lines.grid
             val pattern = "MAS"
+            val centerOffset = Point(1, 1)
             grid.keys.count { point ->
-                val topRightPoint = point.copy(x = point.x + 2)
-                val left = grid.check(topRightPoint, diagonalLeftPoints.take(2), pattern)
-                val right = grid.check(point, diagonalRightPoints.take(2), pattern)
-                left && right
+                if (grid[point + centerOffset] == 'A') {
+                    val topRightPoint = point.copy(x = point.x + 2)
+                    val left = grid.check(topRightPoint, diagonalLeftPoints.take(2), pattern)
+                    val right = grid.check(point, diagonalRightPoints.take(2), pattern)
+                    left && right
+                } else {
+                    false
+                }
             }
         }
         verify {
@@ -72,13 +77,13 @@ private fun Map<Point, Char>.check(
     directions: Sequence<Point>,
     pattern: String
 ): Boolean {
-    val char = get(point)
-    if (char != pattern.first() && char != pattern.last()) {
+    val c = get(point)
+    if (c != pattern.first() && c != pattern.last()) {
         return false
     }
 
     val string = buildString {
-        append(char)
+        append(c)
         directions
             .map { it + point }
             .forEach { p ->
