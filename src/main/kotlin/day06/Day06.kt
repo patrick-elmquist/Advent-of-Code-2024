@@ -78,7 +78,7 @@ private fun lookForLoop(
             '#' -> direction = direction.nextCW
             else -> {
                 guard = next
-                seenStates.add(state)
+                seenStates += state
             }
         }
     }

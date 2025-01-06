@@ -23,17 +23,10 @@ fun main() {
 
         part2 { input ->
             val (rules, updates) = parseInput(input)
+            val comparator = rules.comparator()
             updates
                 .filterNot { update -> update.isValid(rules) }
-                .map { line ->
-                    line.sortedWith { o1, o2 ->
-                        when {
-                            o2 in rules[o1].orEmpty() -> -1
-                            o1 in rules[o2].orEmpty() -> 1
-                            else -> 0
-                        }
-                    }
-                }
+                .map { line -> line.sortedWith(comparator) }
                 .sumOf { numbers -> numbers[numbers.size / 2] }
         }
         verify {
@@ -67,3 +60,11 @@ private fun createRequirementsMap(top: List<String>): Map<Int, Set<Int>> =
         .map { (a, b) -> a to b }
         .groupBy { (_, b) -> b }
         .mapValues { (_, value) -> value.map { it.first }.toSet() }
+
+private fun Map<Int, Set<Int>>.comparator() = Comparator<Int> { a, b ->
+    when {
+        b in this[a].orEmpty() -> -1
+        a in this[b].orEmpty() -> 1
+        else -> 0
+    }
+}
