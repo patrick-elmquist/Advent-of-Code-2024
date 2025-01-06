@@ -8,14 +8,8 @@ import common.day
 fun main() {
     day(n = 3) {
         part1 { input ->
-            val regex = """(mul\([0-9]{1,3},[0-9]{1,3}\))""".toRegex()
-            input.lines.sumOf { line ->
-                regex.findAll(line).sumOf { match ->
-                    match.destructured.let { (instruction) ->
-                        evaluate(instruction)
-                    }
-                }
-            }
+            val regex = """mul\((\d+),(\d+)\)""".toRegex()
+            input.lines.sumOf { line -> regex.findAll(line).sumOf(::evaluate) }
         }
         verify {
             expect result 183788984
@@ -23,18 +17,16 @@ fun main() {
         }
 
         part2 { input ->
-            val regex = """(mul\([0-9]{1,3},[0-9]{1,3}\)|do\(\)|don't\(\))""".toRegex()
+            val regex = """mul\((\d+),(\d+)\)|do\(\)|don't\(\)""".toRegex()
             var enabled = true
             input.lines.sumOf { line ->
                 regex.findAll(line).sumOf { match ->
-                    match.destructured.let { (instruction) ->
-                        when (instruction) {
-                            "do()" -> enabled = true
-                            "don't()" -> enabled = false
-                            else if (enabled) -> return@let evaluate(instruction)
-                        }
-                        return@let 0
+                    when (match.value) {
+                        "do()" -> enabled = true
+                        "don't()" -> enabled = false
+                        else if (enabled) -> return@sumOf evaluate(match)
                     }
+                    return@sumOf 0
                 }
             }
         }
@@ -45,10 +37,5 @@ fun main() {
     }
 }
 
-private fun evaluate(instruction: String) =
-    instruction
-        .removePrefix("mul(")
-        .removeSuffix(")")
-        .split(",")
-        .map(String::toInt)
-        .reduce(Int::times)
+private fun evaluate(match: MatchResult) =
+    match.destructured.let { (a, b) -> a.toInt() * b.toInt() }
