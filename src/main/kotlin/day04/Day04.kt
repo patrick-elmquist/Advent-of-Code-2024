@@ -51,7 +51,7 @@ fun main() {
 private val horizontalPoints = sequenceOf(
     Point(1, 0),
     Point(2, 0),
-    Point(3, 0)
+    Point(3, 0),
 )
 
 private val verticalPoints = sequenceOf(
@@ -75,26 +75,25 @@ private val diagonalRightPoints = sequenceOf(
 private fun Map<Point, Char>.check(
     point: Point,
     directions: Sequence<Point>,
-    pattern: String
+    pattern: String,
 ): Boolean {
     val c = get(point)
-    if (c != pattern.first() && c != pattern.last()) {
+    if (c == pattern.first() || c == pattern.last()) {
+        val string = buildString {
+            append(c)
+            directions
+                .map { it + point }
+                .forEach { p ->
+                    if (p in this@check) {
+                        append(getValue(p))
+                    } else {
+                        return false
+                    }
+                }
+        }
+        return string in setOf(pattern, pattern.reversed())
+    } else {
         return false
     }
-
-    val string = buildString {
-        append(c)
-        directions
-            .map { it + point }
-            .forEach { p ->
-                if (p in this@check) {
-                    append(getValue(p))
-                } else {
-                    return false
-                }
-            }
-    }
-
-    return string.length == pattern.length && string in setOf(pattern, pattern.reversed())
 }
 
